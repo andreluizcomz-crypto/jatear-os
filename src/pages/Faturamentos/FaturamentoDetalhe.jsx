@@ -8,6 +8,7 @@ import {
 } from '../../services/faturamentosService';
 import { formatarData, formatarMoeda, rotuloUnidade } from '../../utils/formatadores';
 import { dataParaInput, inputParaTimestamp } from '../../utils/datas';
+import { gerarPdfFaturamento } from '../../services/pdfService';
 import Justificativa from '../../components/Justificativa';
 
 export default function FaturamentoDetalhe() {
@@ -86,6 +87,13 @@ export default function FaturamentoDetalhe() {
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button type="button" className="botao-secundario" onClick={() => navegar('/faturamentos')}>
             Voltar
+          </button>
+          <button
+            type="button"
+            className="botao-secundario"
+            onClick={() => gerarPdfFaturamento(faturamento)}
+          >
+            PDF
           </button>
           {podeFaturar && emitido && (
             <>

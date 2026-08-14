@@ -575,6 +575,56 @@ a {
   color: var(--jatear-vermelho);
 }
 
+/* ---------- Dashboard ---------- */
+
+.grade-indicadores {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+.cartao-indicador {
+  background: var(--branco);
+  border: 1px solid var(--cinza-borda);
+  border-left: 4px solid var(--jatear-vermelho);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.valor-indicador {
+  font-size: 26px;
+  font-weight: bold;
+  color: var(--jatear-vermelho);
+}
+
+.titulo-indicador {
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.detalhe-indicador {
+  font-size: 13px;
+  color: #555555;
+}
+
+@media (min-width: 768px) {
+  .grade-indicadores {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1025px) {
+  .grade-indicadores {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
 /* ---------- Conexão e fotos ---------- */
 
 .banner-offline {

@@ -8,6 +8,7 @@ import { formatarData, formatarMoeda } from '../../utils/formatadores';
 import { STATUS_ITEM, rotuloStatusItem } from '../../utils/constantes';
 import { exportarCsv } from '../../utils/csv';
 import { hojeInput } from '../../utils/datas';
+import { gerarRelatorioGerencial, gerarRomaneio } from '../../services/pdfService';
 
 const FILTROS_INICIAIS = {
   clientes: [],
@@ -482,6 +483,31 @@ export default function Itens() {
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button type="button" className="botao-secundario" onClick={exportar}>
             Exportar CSV
+          </button>
+          <button
+            type="button"
+            className="botao-secundario"
+            onClick={() =>
+              gerarRelatorioGerencial(
+                ordenados,
+                filtros.periodoInicio
+                  ? `${filtros.periodoInicio.split('-').reverse().join('/')} a ${filtros.periodoFim
+                      .split('-')
+                      .reverse()
+                      .join('/')}`
+                  : 'Filtro atual'
+              )
+            }
+          >
+            Exportar PDF
+          </button>
+          <button
+            type="button"
+            className="botao-secundario"
+            disabled={itensSelecionados.length === 0}
+            onClick={() => gerarRomaneio(itensSelecionados)}
+          >
+            Romaneio
           </button>
           {podeFaturar && (
             <button

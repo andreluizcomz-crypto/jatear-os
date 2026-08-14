@@ -33,10 +33,21 @@ export default function Menu() {
         </Link>
       </div>
 
+      {perfilUsuario?.perfil === 'administrador' && (
+        <>
+          <h2 className="texto-apoio" style={{ fontWeight: 'bold', marginBottom: 8 }}>
+            Administração
+          </h2>
+          <div className="lista-menu" style={{ marginBottom: 16 }}>
+            <Link to="/logs">
+              <IconeOS width={20} height={20} />
+              Logs de auditoria
+            </Link>
+          </div>
+        </>
+      )}
+
       <div className="cartao">
-        <p className="texto-apoio" style={{ marginBottom: 16 }}>
-          Administração, relatórios e logs serão listados aqui nas próximas fases.
-        </p>
         <button
           type="button"
           className="botao-secundario"

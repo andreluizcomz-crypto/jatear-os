@@ -14,6 +14,7 @@ import Menu from './pages/Menu/Menu';
 import Clientes from './pages/Clientes/Clientes';
 import ClienteForm from './pages/Clientes/ClienteForm';
 import Servicos from './pages/Servicos/Servicos';
+import Logs from './pages/Administracao/Logs';
 
 export default function App() {
   return (
@@ -41,6 +42,7 @@ export default function App() {
             <Route path="/clientes/novo" element={<ClienteForm />} />
             <Route path="/clientes/:id" element={<ClienteForm />} />
             <Route path="/servicos" element={<Servicos />} />
+            <Route path="/logs" element={<Logs />} />
           </Route>
         </Routes>
       </BrowserRouter>

@@ -24,7 +24,8 @@ import {
   inputParaTimestamp,
   somarDias,
 } from '../../utils/datas';
-import { formatarMoeda } from '../../utils/formatadores';
+import { formatarCnpj, formatarMoeda } from '../../utils/formatadores';
+import { gerarPdfOS } from '../../services/pdfService';
 import { ehRetrocesso, rotuloStatusOS } from '../../utils/constantes';
 import GradeItens from './GradeItens';
 import ItemEditor from './ItemEditor';
@@ -627,6 +628,23 @@ export default function OSForm() {
             <span className="badge" style={{ background: 'var(--cinza-claro)' }}>
               {rotuloStatusOS(os.status)}
             </span>
+          )}
+          {os && (
+            <button
+              type="button"
+              className="botao-secundario"
+              onClick={() =>
+                gerarPdfOS(
+                  { ...os, ...montarCabecalhoParaBanco() },
+                  clienteSelecionado
+                    ? { cnpj: formatarCnpj(clienteSelecionado.cnpj) }
+                    : null,
+                  itens
+                )
+              }
+            >
+              Imprimir OS
+            </button>
           )}
           {os &&
             os.status !== 'cancelada' &&
