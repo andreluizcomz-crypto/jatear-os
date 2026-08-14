@@ -12,6 +12,17 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Remove qualquer service worker registrado nesta origem.
+      // Retirar quando o service worker próprio do app for criado (Fase 6).
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function (registros) {
+          registros.forEach(function (registro) {
+            registro.unregister();
+          });
+        });
+      }
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

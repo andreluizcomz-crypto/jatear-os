@@ -4,9 +4,10 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   server: {
-    // 3001 para nunca dividir o localhost:3000 com o LMS (que tem
-    // service worker antigo registrado nessa origem servindo cache)
-    port: 3001,
+    // Porta exclusiva do Jatear OS. As origens localhost:3000 (LMS) e
+    // localhost:3001 (tintas) têm service workers antigos registrados no
+    // navegador que servem esses apps do cache mesmo sem servidor rodando.
+    port: 3210,
     strictPort: true,
   },
   build: {
