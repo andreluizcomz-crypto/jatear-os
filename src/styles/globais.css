@@ -1,0 +1,254 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+body {
+  background: var(--cinza-claro);
+  color: var(--cinza-escuro);
+}
+
+/* 16px mínimo em campos — abaixo disso o iOS aplica zoom automático ao focar */
+input,
+select,
+textarea,
+button {
+  font-family: inherit;
+  font-size: 16px;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  color: var(--jatear-vermelho);
+}
+
+/* ---------- Estrutura geral ---------- */
+
+.layout {
+  min-height: 100vh;
+  padding-top: var(--altura-barra-superior);
+  padding-bottom: var(--altura-nav-inferior);
+}
+
+.barra-superior {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--altura-barra-superior);
+  background: var(--jatear-vermelho);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 16px;
+  z-index: 100;
+}
+
+.conteudo {
+  padding: 16px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ---------- Navegação desktop (oculta no celular) ---------- */
+
+.nav-desktop {
+  display: none;
+  margin-left: auto;
+  gap: 4px;
+}
+
+.nav-desktop a {
+  color: var(--branco);
+  text-decoration: none;
+  padding: 10px 14px;
+  border-radius: 4px;
+  font-weight: bold;
+  font-size: 14px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.nav-desktop a.ativo {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* ---------- Navegação inferior (celular) ---------- */
+
+.nav-inferior {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--jatear-vermelho);
+  display: flex;
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 100;
+}
+
+.nav-inferior a {
+  flex: 1;
+  min-height: 56px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: var(--branco);
+  text-decoration: none;
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+.nav-inferior a.ativo {
+  opacity: 1;
+  font-weight: bold;
+}
+
+/* ---------- Cartões e placeholders ---------- */
+
+.cartao {
+  background: var(--branco);
+  border: 1px solid var(--cinza-borda);
+  border-radius: 8px;
+  padding: 24px;
+}
+
+.titulo-pagina {
+  font-size: 22px;
+  margin-bottom: 16px;
+}
+
+.texto-apoio {
+  color: #555555;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.tela-carregando {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #555555;
+}
+
+/* ---------- Tela de login ---------- */
+
+.tela-login {
+  min-height: 100vh;
+  padding-top: var(--altura-barra-superior);
+  display: flex;
+  flex-direction: column;
+}
+
+.cartao-login {
+  background: var(--branco);
+  border: 1px solid var(--cinza-borda);
+  border-radius: 8px;
+  padding: 24px;
+  width: 100%;
+  max-width: 400px;
+  margin: 48px auto 0;
+}
+
+.cartao-login h1 {
+  font-size: 20px;
+  margin-bottom: 4px;
+}
+
+.cartao-login .subtitulo {
+  color: #555555;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.campo {
+  margin-bottom: 16px;
+}
+
+.campo label {
+  display: block;
+  font-size: 14px;
+  font-weight: bold;
+  margin-bottom: 6px;
+}
+
+.campo input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--cinza-borda);
+  border-radius: 4px;
+}
+
+.campo input:focus {
+  outline: 2px solid var(--jatear-vermelho);
+  outline-offset: -1px;
+  border-color: var(--jatear-vermelho);
+}
+
+.botao-primario {
+  width: 100%;
+  min-height: 48px;
+  background: var(--jatear-vermelho);
+  color: var(--branco);
+  border: none;
+  border-radius: 4px;
+  font-weight: bold;
+  padding: 12px;
+}
+
+.botao-primario:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.botao-secundario {
+  min-height: 44px;
+  background: var(--branco);
+  color: var(--jatear-vermelho);
+  border: 1px solid var(--jatear-vermelho);
+  border-radius: 4px;
+  font-weight: bold;
+  padding: 10px 16px;
+}
+
+.mensagem-erro {
+  background: #FDECEA;
+  color: var(--cor-erro);
+  border-radius: 4px;
+  padding: 12px;
+  font-size: 14px;
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+
+/* ---------- Tablet e desktop ---------- */
+
+@media (min-width: 768px) {
+  .layout {
+    padding-bottom: 0;
+  }
+
+  .nav-inferior {
+    display: none;
+  }
+
+  .nav-desktop {
+    display: flex;
+  }
+
+  .cartao-login {
+    margin-top: 96px;
+  }
+}

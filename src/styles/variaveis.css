@@ -1,0 +1,22 @@
+/*
+  Variáveis globais de estilo — Jatear OS
+  Breakpoints (mobile-first — o CSS base é o do celular):
+    celular  < 768px          → CSS base, sem media query
+    tablet   >= 768px         → @media (min-width: 768px)
+    desktop  >= 1025px        → @media (min-width: 1025px)
+*/
+:root {
+  --jatear-vermelho: #B51013;
+  --branco: #FFFFFF;
+  --cinza-escuro: #1F1F1F;
+  --cinza-claro: #F5F5F5;
+  --cinza-borda: #E0E0E0;
+
+  --cor-sucesso: #2E7D32;
+  --cor-atencao: #ED6C02;
+  --cor-erro: #C62828;
+  --cor-informacao: #0277BD;
+
+  --altura-barra-superior: 56px;
+  --altura-nav-inferior: calc(56px + env(safe-area-inset-bottom));
+}
