@@ -8,6 +8,8 @@ import OrdensServico from './pages/OrdensServico/OrdensServico';
 import OSForm from './pages/OrdensServico/OSForm';
 import Itens from './pages/Itens/Itens';
 import Faturamentos from './pages/Faturamentos/Faturamentos';
+import FaturamentoDetalhe from './pages/Faturamentos/FaturamentoDetalhe';
+import GerarFaturamento from './pages/Faturamentos/GerarFaturamento';
 import Menu from './pages/Menu/Menu';
 import Clientes from './pages/Clientes/Clientes';
 import ClienteForm from './pages/Clientes/ClienteForm';
@@ -32,6 +34,8 @@ export default function App() {
             <Route path="/ordens/:id" element={<OSForm />} />
             <Route path="/itens" element={<Itens />} />
             <Route path="/faturamentos" element={<Faturamentos />} />
+            <Route path="/faturamentos/gerar" element={<GerarFaturamento />} />
+            <Route path="/faturamentos/:id" element={<FaturamentoDetalhe />} />
             <Route path="/menu" element={<Menu />} />
             <Route path="/clientes" element={<Clientes />} />
             <Route path="/clientes/novo" element={<ClienteForm />} />

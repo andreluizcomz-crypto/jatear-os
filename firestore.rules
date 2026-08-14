@@ -26,6 +26,12 @@ service cloud.firestore {
         (docUsuario().perfil == 'administrador' || docUsuario().perfil == 'producao');
     }
 
+    // Faturamento gera e cancela faturamentos e marca itens faturados
+    function podeFaturar() {
+      return usuarioAtivo() &&
+        (docUsuario().perfil == 'administrador' || docUsuario().perfil == 'faturamento');
+    }
+
     // ---------- usuarios ----------
     // Cada usuário lê o próprio perfil; administrador lê e escreve todos.
     match /usuarios/{uid} {
@@ -49,7 +55,8 @@ service cloud.firestore {
     // ---------- ordens_servico ----------
     match /ordens_servico/{osId} {
       allow read: if usuarioAtivo();
-      allow create, update: if podeEditarOS();
+      allow create: if podeEditarOS();
+      allow update: if podeEditarOS() || podeFaturar();
       allow delete: if false; // OS nunca é excluída — usar status cancelada
     }
 
@@ -58,7 +65,8 @@ service cloud.firestore {
     // consulta global por collectionGroup (Fase 4).
     match /{caminho=**}/itens/{itemId} {
       allow read: if usuarioAtivo();
-      allow create, update: if podeEditarOS();
+      allow create: if podeEditarOS();
+      allow update: if podeEditarOS() || podeFaturar();
       // Item faturado não pode ser removido
       allow delete: if podeEditarOS() && resource.data.faturado != true;
     }
@@ -66,7 +74,14 @@ service cloud.firestore {
     // ---------- contadores (numeração transacional OS/FAT) ----------
     match /contadores/{contadorId} {
       allow read: if usuarioAtivo();
-      allow write: if podeEditarOS();
+      allow write: if podeEditarOS() || podeFaturar();
+    }
+
+    // ---------- faturamentos ----------
+    match /faturamentos/{faturamentoId} {
+      allow read: if usuarioAtivo();
+      allow create, update: if podeFaturar();
+      allow delete: if false; // faturamento cancelado não é excluído
     }
 
     // ---------- logs (auditoria) ----------

@@ -209,8 +209,16 @@ export async function recalcularOS(osId) {
   const itens = resultado.docs.map((d) => d.data());
   const os = await buscarOS(osId);
   if (!os || os.status === 'cancelada') return;
+  const totais = calcularTotaisOS(itens);
+  const statusFaturamento =
+    totais.itensFaturados === 0
+      ? 'nao_faturada'
+      : totais.itensFaturados === totais.qtdItens
+        ? 'faturada'
+        : 'parcial';
   await updateDoc(doc(db, 'ordens_servico', osId), {
     status: derivarStatusOS(itens),
-    totais: calcularTotaisOS(itens),
+    statusFaturamento,
+    totais,
   });
 }
