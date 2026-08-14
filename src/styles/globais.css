@@ -575,6 +575,54 @@ a {
   color: var(--jatear-vermelho);
 }
 
+/* ---------- Ações em lote ---------- */
+
+.acoes-lote {
+  background: var(--branco);
+  border: 1px solid var(--jatear-vermelho);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 12px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+
+.grupo-lote {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.grupo-lote input,
+.grupo-lote select {
+  min-height: 32px;
+  font-size: 13px;
+  padding: 4px 6px;
+  border: 1px solid var(--cinza-borda);
+  border-radius: 3px;
+  width: 130px;
+}
+
+.grupo-lote button,
+.limpar-selecao {
+  min-height: 32px;
+  font-size: 13px;
+  padding: 4px 10px;
+  border: 1px solid var(--jatear-vermelho);
+  color: var(--jatear-vermelho);
+  background: var(--branco);
+  border-radius: 3px;
+  font-weight: bold;
+}
+
+.limpar-selecao {
+  border-color: var(--cinza-borda);
+  color: #555555;
+}
+
 /* ---------- Rodapé fixo de totais da OS ---------- */
 
 .pagina-os {

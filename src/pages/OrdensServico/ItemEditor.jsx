@@ -5,11 +5,19 @@ import {
   calcularItem,
   sugerirQuantidadeCobrada,
 } from '../../services/itensService';
-import { rotuloStatusItem } from '../../utils/constantes';
+import { rotuloStatusItem, statusDisponiveis } from '../../utils/constantes';
+import { hojeInput } from '../../utils/datas';
 
 // Edição de item em tela cheia (celular) ou modal (desktop).
 // Trabalha numa cópia local; só devolve ao salvar.
-export default function ItemEditor({ item, servicos, sugerirPreco, onSalvar, onFechar }) {
+export default function ItemEditor({
+  item,
+  servicos,
+  sugerirPreco,
+  ehAdministrador,
+  onSalvar,
+  onFechar,
+}) {
   const [dados, setDados] = useState({ ...item });
   const [erro, setErro] = useState('');
   const bloqueado = dados.faturado === true;
@@ -17,6 +25,14 @@ export default function ItemEditor({ item, servicos, sugerirPreco, onSalvar, onF
   function alterar(campo, valor) {
     setDados((atual) => {
       const novo = { ...atual, [campo]: valor };
+      if (campo === 'status') {
+        if (['concluido', 'entregue'].includes(valor) && !novo.dataConclusao) {
+          novo.dataConclusao = hojeInput();
+        }
+        if (valor === 'entregue' && !novo.dataEntrega) {
+          novo.dataEntrega = hojeInput();
+        }
+      }
       if (['quantidade', 'pesoUnitarioKg', 'areaUnitariaM2'].includes(campo)) {
         novo.servicos = (novo.servicos || []).map((servico) =>
           servico.qtdManual
@@ -79,8 +95,19 @@ export default function ItemEditor({ item, servicos, sugerirPreco, onSalvar, onF
   }
 
   function aoSalvar() {
-    if (!dados.descricao.trim() || !dados.dataRecebimento) {
+    if (!(dados.descricao || '').trim() || !dados.dataRecebimento) {
       setErro('Descrição e data de recebimento são obrigatórias.');
+      return;
+    }
+    if (
+      ['concluido', 'entregue'].includes(dados.status) &&
+      (dados.servicos || []).length === 0
+    ) {
+      setErro('Item sem serviço lançado não pode ser concluído.');
+      return;
+    }
+    if (dados.status === 'concluido' && !dados.dataConclusao) {
+      setErro('Informe a data de conclusão.');
       return;
     }
     onSalvar(dados);
@@ -158,6 +185,37 @@ export default function ItemEditor({ item, servicos, sugerirPreco, onSalvar, onF
                 type="date"
                 value={dados.dataPrevistaEntrega || ''}
                 onChange={(e) => alterar('dataPrevistaEntrega', e.target.value)}
+              />
+            </div>
+            <div className="campo">
+              <label>Status</label>
+              <select
+                value={dados.status}
+                onChange={(e) => alterar('status', e.target.value)}
+              >
+                {statusDisponiveis(dados.status, ehAdministrador)
+                  .filter((s) => s !== 'cancelado' || dados.status === 'cancelado')
+                  .map((s) => (
+                    <option key={s} value={s}>
+                      {rotuloStatusItem(s)}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            <div className="campo">
+              <label>Data de conclusão</label>
+              <input
+                type="date"
+                value={dados.dataConclusao || ''}
+                onChange={(e) => alterar('dataConclusao', e.target.value)}
+              />
+            </div>
+            <div className="campo">
+              <label>Data de entrega</label>
+              <input
+                type="date"
+                value={dados.dataEntrega || ''}
+                onChange={(e) => alterar('dataEntrega', e.target.value)}
               />
             </div>
             <div className="campo campo-largo">

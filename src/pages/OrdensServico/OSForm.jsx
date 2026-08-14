@@ -6,9 +6,11 @@ import { listarServicos } from '../../services/servicosService';
 import {
   atualizarCabecalhoOS,
   buscarOS,
+  cancelarOS,
   criarOS,
   sugerirNumeroOS,
 } from '../../services/osService';
+import { registrarLog } from '../../services/logsService';
 import {
   calcularItem,
   excluirItem,
@@ -23,10 +25,12 @@ import {
   somarDias,
 } from '../../utils/datas';
 import { formatarMoeda } from '../../utils/formatadores';
-import { rotuloStatusOS } from '../../utils/constantes';
+import { ehRetrocesso, rotuloStatusOS } from '../../utils/constantes';
 import GradeItens from './GradeItens';
 import ItemEditor from './ItemEditor';
+import AcoesLote from './AcoesLote';
 import Confirmacao from '../../components/Confirmacao';
+import Justificativa from '../../components/Justificativa';
 
 const camposDataItem = ['dataRecebimento', 'dataPrevistaEntrega', 'dataConclusao', 'dataEntrega'];
 
@@ -84,6 +88,10 @@ export default function OSForm() {
   const [aviso, setAviso] = useState('');
   const [indiceEditor, setIndiceEditor] = useState(null);
   const [indiceExcluir, setIndiceExcluir] = useState(null);
+  const [selecionados, setSelecionados] = useState(new Set());
+  const [indiceCancelarItem, setIndiceCancelarItem] = useState(null);
+  const [modalEncerrar, setModalEncerrar] = useState(false);
+  const [modalCancelarOS, setModalCancelarOS] = useState(false);
 
   const clienteSelecionado = clientes.find((c) => c.id === cabecalho.clienteId);
 
@@ -208,7 +216,65 @@ export default function OSForm() {
     );
   }
 
+  // Aplica um status a um item, com datas automáticas (editáveis depois)
+  function aplicarStatus(item, novoStatus) {
+    const atualizado = { ...item, status: novoStatus };
+    if (['concluido', 'entregue'].includes(novoStatus) && !atualizado.dataConclusao) {
+      atualizado.dataConclusao = hojeInput();
+    }
+    if (novoStatus === 'entregue' && !atualizado.dataEntrega) {
+      atualizado.dataEntrega = hojeInput();
+    }
+    return atualizado;
+  }
+
+  function cancelarItemLocal(item, justificativa) {
+    const observacoes = [item.observacoes, `Cancelado: ${justificativa}`]
+      .filter(Boolean)
+      .join(' | ');
+    return { ...item, status: 'cancelado', observacoes };
+  }
+
   const acoesGrade = {
+    alternarSelecionado(indice) {
+      setSelecionados((atual) => {
+        const novo = new Set(atual);
+        if (novo.has(indice)) novo.delete(indice);
+        else novo.add(indice);
+        return novo;
+      });
+    },
+    alternarTodos() {
+      setSelecionados((atual) =>
+        atual.size === itens.length ? new Set() : new Set(itens.map((_, i) => i))
+      );
+    },
+    alterarStatus(indice, novoStatus) {
+      const item = itens[indice];
+      if (novoStatus === item.status) return;
+      if (
+        ['concluido', 'entregue'].includes(novoStatus) &&
+        (item.servicos || []).length === 0
+      ) {
+        setErro(`O item ${item.sequencia} não tem serviço lançado e não pode ser concluído.`);
+        return;
+      }
+      if (novoStatus === 'cancelado') {
+        setIndiceCancelarItem(indice);
+        return;
+      }
+      if (ehRetrocesso(item.status, novoStatus)) {
+        registrarLog(
+          'status_retrocedido',
+          'ordens_servico',
+          id,
+          { itemId: item.id || null, sequencia: item.sequencia, de: item.status, para: novoStatus },
+          usuario.uid
+        );
+      }
+      setErro('');
+      atualizarItem(indice, (i) => aplicarStatus(i, novoStatus));
+    },
     alterarItem(indice, campo, valor) {
       atualizarItem(indice, (item) => {
         const novo = { ...item, [campo]: valor };
@@ -352,9 +418,120 @@ export default function OSForm() {
     },
   };
 
+  // ---------- Ações em lote ----------
+  function aplicarLote(tipo, valor) {
+    setErro('');
+    setAviso('');
+    if (tipo === 'status' && valor === 'cancelado') {
+      setIndiceCancelarItem('lote');
+      return;
+    }
+    let pulados = 0;
+    const novos = itens.map((item, i) => {
+      if (!selecionados.has(i) || item.faturado) return item;
+      let novo = item;
+      if (tipo === 'status') {
+        if (item.status === 'cancelado' && !ehAdministrador) {
+          pulados++;
+          return item;
+        }
+        if (['concluido', 'entregue'].includes(valor) && (item.servicos || []).length === 0) {
+          pulados++;
+          return item;
+        }
+        if (ehRetrocesso(item.status, valor) && !ehAdministrador) {
+          pulados++;
+          return item;
+        }
+        novo = aplicarStatus(item, valor);
+      } else if (tipo === 'dataConclusao') {
+        novo = { ...item, dataConclusao: valor };
+      } else if (tipo === 'dataPrevista') {
+        novo = { ...item, dataPrevistaEntrega: valor };
+      } else if (tipo === 'observacao') {
+        novo = { ...item, observacoes: valor };
+      } else if (tipo === 'servico') {
+        const catalogo = servicos.find((s) => s.codigo === valor);
+        if (!catalogo) return item;
+        const principal = {
+          servicoCodigo: catalogo.codigo,
+          servicoNome: catalogo.nome,
+          unidade: catalogo.unidadePadrao,
+          quantidadeCobrada: sugerirQuantidadeCobrada(catalogo.unidadePadrao, item),
+          precoUnitario: sugerirPreco(catalogo.codigo),
+          valor: 0,
+          esquemaPintura: '',
+          corRal: '',
+          espessuraEspecificada: '',
+          qtdManual: false,
+        };
+        novo = { ...item, servicos: [principal, ...(item.servicos || []).slice(1)] };
+      } else if (tipo === 'preco') {
+        if (!(item.servicos || []).length) {
+          pulados++;
+          return item;
+        }
+        novo = {
+          ...item,
+          servicos: item.servicos.map((s, j) => (j === 0 ? { ...s, precoUnitario: valor } : s)),
+        };
+      }
+      return { ...calcularItem(novo), _alterado: true };
+    });
+    setItens(novos);
+    setAviso(
+      pulados > 0
+        ? `Aplicado; ${pulados} item(ns) não puderam ser alterados. Clique em Salvar alterações.`
+        : 'Aplicado aos itens selecionados. Clique em Salvar alterações para gravar.'
+    );
+  }
+
+  function confirmarCancelamentoItem(justificativa) {
+    if (indiceCancelarItem === 'lote') {
+      setItens((atuais) =>
+        atuais.map((item, i) =>
+          selecionados.has(i) && !item.faturado && item.status !== 'cancelado'
+            ? { ...cancelarItemLocal(item, justificativa), _alterado: true }
+            : item
+        )
+      );
+      setAviso('Itens cancelados. Clique em Salvar alterações para gravar.');
+    } else {
+      atualizarItem(indiceCancelarItem, (item) => cancelarItemLocal(item, justificativa));
+    }
+    setIndiceCancelarItem(null);
+  }
+
+  // ---------- Encerrar / cancelar OS ----------
+  async function confirmarEncerramento(justificativa) {
+    setModalEncerrar(false);
+    const novos = itens.map((item) =>
+      ['recebido', 'em_execucao'].includes(item.status)
+        ? { ...cancelarItemLocal(item, justificativa), _alterado: true }
+        : item
+    );
+    setItens(novos);
+    await persistir(novos);
+    registrarLog('os_encerrada', 'ordens_servico', id, { motivo: justificativa }, usuario.uid);
+  }
+
+  async function confirmarCancelamentoOS(justificativa) {
+    setModalCancelarOS(false);
+    const novos = itens.map((item) =>
+      !item.faturado && item.status !== 'cancelado'
+        ? { ...cancelarItemLocal(item, justificativa), _alterado: true }
+        : item
+    );
+    setItens(novos);
+    await persistir(novos);
+    await cancelarOS(id, justificativa, usuario.uid);
+    setOs(await buscarOS(id));
+  }
+
   async function confirmarExclusao() {
     const indice = indiceExcluir;
     setIndiceExcluir(null);
+    setSelecionados(new Set());
     const item = itens[indice];
     if (item.id) {
       try {
@@ -391,14 +568,16 @@ export default function OSForm() {
   }, [itens]);
 
   // ---------- Salvar ----------
-  async function aoSalvar() {
+  async function persistir(itensAtuais) {
     setErro('');
     setAviso('');
     if (!cabecalho.clienteId) {
       setErro('Selecione o cliente da OS.');
       return;
     }
-    const semDescricao = itens.some((i) => !i.descricao.trim() || !i.dataRecebimento);
+    const semDescricao = itensAtuais.some(
+      (i) => !(i.descricao || '').trim() || !i.dataRecebimento
+    );
     if (semDescricao) {
       setErro('Todo item precisa de descrição e data de recebimento antes de salvar.');
       return;
@@ -415,13 +594,14 @@ export default function OSForm() {
         id,
         dadosCabecalho,
         { numero: os.numero, clienteId: os.clienteId, subclienteNome: os.subclienteNome },
-        itens,
+        itensAtuais,
         usuario.uid
       );
-      await salvarItens(id, dadosCabecalho, itens.map(itemParaBanco), usuario.uid);
+      await salvarItens(id, dadosCabecalho, itensAtuais.map(itemParaBanco), usuario.uid);
       const registro = await buscarOS(id);
       setOs(registro);
       setItens((await listarItens(id)).map(itemDoBanco));
+      setSelecionados(new Set());
       setAviso('Alterações salvas.');
     } catch (excecao) {
       setErro(traduzirErroOS(excecao.message));
@@ -429,6 +609,8 @@ export default function OSForm() {
       setSalvando(false);
     }
   }
+
+  const aoSalvar = () => persistir(itens);
 
   if (carregando) return <div className="texto-apoio">Carregando OS...</div>;
 
@@ -440,11 +622,37 @@ export default function OSForm() {
     <div className="pagina-os">
       <div className="barra-acoes">
         <h1 className="titulo-pagina">{ehNova ? 'Nova Ordem de Serviço' : cabecalho.numero}</h1>
-        {os && (
-          <span className="badge" style={{ background: 'var(--cinza-claro)' }}>
-            {rotuloStatusOS(os.status)}
-          </span>
-        )}
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          {os && (
+            <span className="badge" style={{ background: 'var(--cinza-claro)' }}>
+              {rotuloStatusOS(os.status)}
+            </span>
+          )}
+          {os &&
+            os.status !== 'cancelada' &&
+            podeEditar &&
+            itens.some((i) => ['recebido', 'em_execucao'].includes(i.status)) && (
+              <button
+                type="button"
+                className="botao-secundario"
+                onClick={() => setModalEncerrar(true)}
+              >
+                Encerrar OS
+              </button>
+            )}
+          {os &&
+            os.status !== 'cancelada' &&
+            ehAdministrador &&
+            !itens.some((i) => i.faturado) && (
+              <button
+                type="button"
+                className="botao-secundario"
+                onClick={() => setModalCancelarOS(true)}
+              >
+                Cancelar OS
+              </button>
+            )}
+        </div>
       </div>
 
       {erro && <div className="mensagem-erro">{erro}</div>}
@@ -552,13 +760,27 @@ export default function OSForm() {
           Salve a OS para começar a lançar os itens.
         </p>
       ) : (
-        <GradeItens
-          itens={itens}
-          servicos={servicos}
-          totais={totais}
-          podeEditar={podeEditar}
-          acoes={acoesGrade}
-        />
+        <>
+          {selecionados.size > 0 && podeEditar && (
+            <div className="so-desktop">
+              <AcoesLote
+                quantidade={selecionados.size}
+                servicos={servicos}
+                onAplicar={aplicarLote}
+                onLimpar={() => setSelecionados(new Set())}
+              />
+            </div>
+          )}
+          <GradeItens
+            itens={itens}
+            servicos={servicos}
+            totais={totais}
+            podeEditar={podeEditar && os?.status !== 'cancelada'}
+            ehAdministrador={ehAdministrador}
+            selecionados={selecionados}
+            acoes={acoesGrade}
+          />
+        </>
       )}
 
       <div className="rodape-totais">
@@ -596,6 +818,7 @@ export default function OSForm() {
           item={itens[indiceEditor]}
           servicos={servicos}
           sugerirPreco={sugerirPreco}
+          ehAdministrador={ehAdministrador}
           onFechar={() => setIndiceEditor(null)}
           onSalvar={(itemAtualizado) => {
             setItens((atuais) =>
@@ -607,6 +830,40 @@ export default function OSForm() {
             );
             setIndiceEditor(null);
           }}
+        />
+      )}
+
+      {indiceCancelarItem !== null && (
+        <Justificativa
+          titulo={
+            indiceCancelarItem === 'lote'
+              ? 'Cancelar itens selecionados'
+              : `Cancelar item ${itens[indiceCancelarItem]?.sequencia}`
+          }
+          mensagem="O cancelamento fica registrado nas observações do item."
+          rotuloConfirmar="Cancelar item(ns)"
+          onConfirmar={confirmarCancelamentoItem}
+          onCancelar={() => setIndiceCancelarItem(null)}
+        />
+      )}
+
+      {modalEncerrar && (
+        <Justificativa
+          titulo="Encerrar OS"
+          mensagem="Os itens ainda não concluídos serão cancelados com esta justificativa. Os itens concluídos, entregues ou faturados não são alterados."
+          rotuloConfirmar="Encerrar OS"
+          onConfirmar={confirmarEncerramento}
+          onCancelar={() => setModalEncerrar(false)}
+        />
+      )}
+
+      {modalCancelarOS && (
+        <Justificativa
+          titulo="Cancelar OS"
+          mensagem="A OS ficará com status Cancelada e todos os itens não faturados serão cancelados. A OS não é excluída."
+          rotuloConfirmar="Cancelar OS"
+          onConfirmar={confirmarCancelamentoOS}
+          onCancelar={() => setModalCancelarOS(false)}
         />
       )}
 

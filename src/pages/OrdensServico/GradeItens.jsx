@@ -1,7 +1,7 @@
 import { useRef } from 'react';
 import { formatarMoeda } from '../../utils/formatadores';
 import { inputParaDataCurta } from '../../utils/datas';
-import { STATUS_ITEM, rotuloStatusItem } from '../../utils/constantes';
+import { STATUS_ITEM, rotuloStatusItem, statusDisponiveis } from '../../utils/constantes';
 
 function BadgeStatus({ status }) {
   return (
@@ -16,10 +16,19 @@ function BadgeStatus({ status }) {
 
 // Grade de itens: tabela editável em linha no desktop,
 // lista de cartões no celular (edição em tela cheia).
-export default function GradeItens({ itens, servicos, totais, podeEditar, acoes }) {
+export default function GradeItens({
+  itens,
+  servicos,
+  totais,
+  podeEditar,
+  ehAdministrador,
+  selecionados,
+  acoes,
+}) {
   const inputCsv = useRef(null);
 
   const linhaBloqueada = (item) => item.faturado === true || !podeEditar;
+  const todosSelecionados = itens.length > 0 && selecionados.size === itens.length;
 
   return (
     <div>
@@ -54,6 +63,14 @@ export default function GradeItens({ itens, servicos, totais, podeEditar, acoes 
         <table className="tabela-itens">
           <thead>
             <tr>
+              <th>
+                <input
+                  type="checkbox"
+                  checked={todosSelecionados}
+                  onChange={acoes.alternarTodos}
+                  title="Selecionar todos"
+                />
+              </th>
               <th>Seq</th>
               <th className="col-descricao">Descrição</th>
               <th>Cód. peça</th>
@@ -77,6 +94,13 @@ export default function GradeItens({ itens, servicos, totais, podeEditar, acoes 
               const bloqueada = linhaBloqueada(item);
               return (
                 <tr key={item.id || `novo-${indice}`} className={bloqueada ? 'linha-bloqueada' : ''}>
+                  <td>
+                    <input
+                      type="checkbox"
+                      checked={selecionados.has(indice)}
+                      onChange={() => acoes.alternarSelecionado(indice)}
+                    />
+                  </td>
                   <td>{item.sequencia}</td>
                   <td className="col-descricao">
                     <input
@@ -197,9 +221,23 @@ export default function GradeItens({ itens, servicos, totais, podeEditar, acoes 
                     />
                   </td>
                   <td>
-                    <BadgeStatus status={item.status} />
-                    {item.faturado && item.faturamentoId && (
-                      <div className="linha-detalhe">Fat.: {item.notaFiscal || item.faturamentoId}</div>
+                    {item.faturado || !podeEditar ? (
+                      <BadgeStatus status={item.status} />
+                    ) : (
+                      <select
+                        value={item.status}
+                        onChange={(e) => acoes.alterarStatus(indice, e.target.value)}
+                        style={{ color: STATUS_ITEM[item.status]?.cor }}
+                      >
+                        {statusDisponiveis(item.status, ehAdministrador).map((s) => (
+                          <option key={s} value={s}>
+                            {rotuloStatusItem(s)}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    {item.faturado && (
+                      <div className="linha-detalhe">Fat.: {item.faturamentoNumero || ''}</div>
                     )}
                   </td>
                   <td>
@@ -229,7 +267,7 @@ export default function GradeItens({ itens, servicos, totais, podeEditar, acoes 
             })}
             {itens.length === 0 && (
               <tr>
-                <td colSpan={15} className="texto-apoio" style={{ padding: 16 }}>
+                <td colSpan={16} className="texto-apoio" style={{ padding: 16 }}>
                   Nenhum item lançado. Use "Adicionar item" ou "Importar CSV".
                 </td>
               </tr>
@@ -238,7 +276,7 @@ export default function GradeItens({ itens, servicos, totais, podeEditar, acoes 
           {itens.length > 0 && (
             <tfoot>
               <tr>
-                <td colSpan={3}>Totais</td>
+                <td colSpan={4}>Totais</td>
                 <td>{totais.qtdPecas}</td>
                 <td>{totais.pesoTotalKg}</td>
                 <td>{totais.areaTotalM2}</td>

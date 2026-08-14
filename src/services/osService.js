@@ -192,6 +192,17 @@ export async function atualizarCabecalhoOS(osId, cabecalho, anterior, itens, uid
   registrarLog('os_cabecalho_atualizado', 'ordens_servico', osId, { numero: cabecalho.numero }, uid);
 }
 
+// Cancelamento manual da OS (exige justificativa; nunca é excluída)
+export async function cancelarOS(osId, motivo, uid) {
+  await updateDoc(doc(db, 'ordens_servico', osId), {
+    status: 'cancelada',
+    motivoCancelamento: motivo,
+    atualizadoPor: uid,
+    atualizadoEm: serverTimestamp(),
+  });
+  registrarLog('os_cancelada', 'ordens_servico', osId, { motivo }, uid);
+}
+
 // Recalcula status e totais derivados a partir dos itens gravados
 export async function recalcularOS(osId) {
   const resultado = await getDocs(collection(db, 'ordens_servico', osId, 'itens'));
