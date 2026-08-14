@@ -575,6 +575,128 @@ a {
   color: var(--jatear-vermelho);
 }
 
+/* ---------- Conexão e fotos ---------- */
+
+.banner-offline {
+  position: fixed;
+  top: var(--altura-barra-superior);
+  left: 0;
+  right: 0;
+  background: var(--cor-atencao);
+  color: var(--branco);
+  text-align: center;
+  font-size: 13px;
+  font-weight: bold;
+  padding: 6px 12px;
+  z-index: 99;
+}
+
+.secao-fotos {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.grupo-fotos {
+  border: 1px solid var(--cinza-borda);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.rotulo-foto {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.miniaturas {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.miniatura img {
+  width: 88px;
+  height: 88px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid var(--cinza-borda);
+  cursor: pointer;
+  display: block;
+}
+
+.miniatura button {
+  background: none;
+  border: none;
+  color: var(--cor-erro);
+  font-size: 12px;
+  padding: 4px 0;
+  width: 100%;
+}
+
+.barra-progresso {
+  position: relative;
+  background: var(--cinza-claro);
+  border-radius: 4px;
+  margin-top: 8px;
+  height: 32px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.barra-progresso-interna {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: #F5C6C7;
+  transition: width 0.2s;
+}
+
+.barra-progresso button {
+  position: relative;
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.foto-ampliada {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.9);
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.foto-ampliada img {
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.botao-flutuante {
+  position: fixed;
+  right: 16px;
+  bottom: calc(var(--altura-nav-inferior) + 84px);
+  min-width: 56px;
+  min-height: 56px;
+  border-radius: 28px;
+  background: var(--jatear-vermelho);
+  color: var(--branco);
+  border: none;
+  font-size: 15px;
+  font-weight: bold;
+  padding: 0 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  z-index: 95;
+}
+
 /* ---------- Consulta de itens ---------- */
 
 .filtros-rapidos {

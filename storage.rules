@@ -1,0 +1,18 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Fotos e documentos de itens de OS: os/{osId}/{itemId}/{tipo}/{arquivo}
+    match /os/{osId}/{itemId}/{tipo}/{arquivo} {
+      allow read: if request.auth != null;
+      allow create, update: if request.auth != null
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*');
+      allow delete: if request.auth != null;
+    }
+
+    match /{tudo=**} {
+      allow read, write: if false;
+    }
+  }
+}

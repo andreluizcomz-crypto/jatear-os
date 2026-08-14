@@ -321,6 +321,11 @@ export default function GradeItens({
         {itens.length === 0 && (
           <p className="texto-apoio">Nenhum item lançado. Use "Adicionar item".</p>
         )}
+        {podeEditar && (
+          <button type="button" className="botao-flutuante so-celular" onClick={acoes.adicionar}>
+            + Item
+          </button>
+        )}
       </div>
     </div>
   );

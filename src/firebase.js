@@ -1,6 +1,11 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import {
+  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentSingleTabManager,
+} from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
@@ -15,5 +20,18 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
-export const db = getFirestore(app);
+
+// Persistência offline (uso no pátio com sinal fraco).
+// Vale para UMA aba por vez; se outra aba tiver a posse, o SDK
+// continua funcionando com cache em memória, sem quebrar a aplicação.
+let bancoDados;
+try {
+  bancoDados = initializeFirestore(app, {
+    localCache: persistentLocalCache({ tabManager: persistentSingleTabManager({}) }),
+  });
+} catch (_) {
+  bancoDados = getFirestore(app);
+}
+export const db = bancoDados;
+
 export const storage = getStorage(app);

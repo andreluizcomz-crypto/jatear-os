@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import LogoJatear from '../assets/LogoJatear';
+import IndicadorConexao from './IndicadorConexao';
 import {
   IconeInicio,
   IconeOS,
@@ -33,6 +34,8 @@ export default function Layout() {
           ))}
         </nav>
       </header>
+
+      <IndicadorConexao />
 
       <main className="conteudo">
         <Outlet />

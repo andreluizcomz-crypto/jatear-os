@@ -7,11 +7,13 @@ import {
 } from '../../services/itensService';
 import { rotuloStatusItem, statusDisponiveis } from '../../utils/constantes';
 import { hojeInput } from '../../utils/datas';
+import { excluirFoto, iniciarEnvioFoto } from '../../services/fotosService';
 
 // Edição de item em tela cheia (celular) ou modal (desktop).
 // Trabalha numa cópia local; só devolve ao salvar.
 export default function ItemEditor({
   item,
+  osId,
   servicos,
   sugerirPreco,
   ehAdministrador,
@@ -20,7 +22,36 @@ export default function ItemEditor({
 }) {
   const [dados, setDados] = useState({ ...item });
   const [erro, setErro] = useState('');
+  const [envio, setEnvio] = useState(null); // { tipo, progresso, tarefa }
+  const [fotoAmpliada, setFotoAmpliada] = useState(null);
   const bloqueado = dados.faturado === true;
+
+  async function enviarFoto(tipo, arquivo) {
+    setErro('');
+    try {
+      const { tarefa, promessa } = await iniciarEnvioFoto(
+        osId,
+        dados.id,
+        tipo,
+        arquivo,
+        (progresso) => setEnvio((atual) => ({ ...(atual || { tipo }), tipo, progresso, tarefa }))
+      );
+      setEnvio({ tipo, progresso: 0, tarefa });
+      const foto = await promessa;
+      setDados((atual) => ({ ...atual, fotos: [...(atual.fotos || []), foto] }));
+      setEnvio(null);
+    } catch (excecao) {
+      setEnvio(null);
+      if (excecao?.code !== 'storage/canceled') {
+        setErro('Não foi possível enviar a foto. Verifique a conexão e tente novamente.');
+      }
+    }
+  }
+
+  function removerFoto(foto) {
+    if (foto.caminho) excluirFoto(foto.caminho);
+    setDados((atual) => ({ ...atual, fotos: (atual.fotos || []).filter((f) => f !== foto) }));
+  }
 
   function alterar(campo, valor) {
     setDados((atual) => {
@@ -309,7 +340,75 @@ export default function ItemEditor({
           <button type="button" className="botao-secundario" onClick={adicionarServico}>
             Adicionar serviço
           </button>
+
+          <h3 className="subtitulo-secao">Fotos (antes / depois)</h3>
+          {!dados.id ? (
+            <p className="texto-apoio">
+              Salve as alterações da OS antes de anexar fotos a este item.
+            </p>
+          ) : (
+            <div className="secao-fotos">
+              {['antes', 'depois'].map((tipo) => (
+                <div key={tipo} className="grupo-fotos">
+                  <label className="botao-secundario rotulo-foto">
+                    Foto ({tipo})
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      style={{ display: 'none' }}
+                      onChange={(e) => {
+                        if (e.target.files[0]) enviarFoto(tipo, e.target.files[0]);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                  {envio?.tipo === tipo && (
+                    <div className="barra-progresso">
+                      <div
+                        className="barra-progresso-interna"
+                        style={{ width: `${envio.progresso}%` }}
+                      />
+                      <button
+                        type="button"
+                        className="acao-excluir"
+                        onClick={() => envio.tarefa.cancel()}
+                      >
+                        Cancelar ({envio.progresso}%)
+                      </button>
+                    </div>
+                  )}
+                  <div className="miniaturas">
+                    {(dados.fotos || [])
+                      .filter((f) => f.tipo === tipo)
+                      .map((foto) => (
+                        <div key={foto.urlStorage} className="miniatura">
+                          <img
+                            src={foto.urlStorage}
+                            alt={`Foto ${tipo}`}
+                            onClick={() => setFotoAmpliada(foto.urlStorage)}
+                          />
+                          <button type="button" onClick={() => removerFoto(foto)}>
+                            Remover
+                          </button>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              ))}
+              <p className="texto-apoio">
+                Após enviar, clique em Aplicar e depois em Salvar alterações para gravar as
+                fotos no item.
+              </p>
+            </div>
+          )}
         </fieldset>
+
+        {fotoAmpliada && (
+          <div className="foto-ampliada" onClick={() => setFotoAmpliada(null)}>
+            <img src={fotoAmpliada} alt="Foto ampliada" />
+          </div>
+        )}
 
         <div className="rodape-item-editor">
           <strong>Total do item: {formatarMoeda(dados.valorTotalItem)}</strong>

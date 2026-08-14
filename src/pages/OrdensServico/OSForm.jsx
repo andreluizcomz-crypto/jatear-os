@@ -816,6 +816,7 @@ export default function OSForm() {
       {indiceEditor !== null && (
         <ItemEditor
           item={itens[indiceEditor]}
+          osId={id}
           servicos={servicos}
           sugerirPreco={sugerirPreco}
           ehAdministrador={ehAdministrador}
