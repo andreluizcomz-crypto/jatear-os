@@ -5,6 +5,7 @@ import Layout from './components/Layout';
 import Login from './pages/Login/Login';
 import Inicio from './pages/Inicio/Inicio';
 import OrdensServico from './pages/OrdensServico/OrdensServico';
+import OSForm from './pages/OrdensServico/OSForm';
 import Itens from './pages/Itens/Itens';
 import Faturamentos from './pages/Faturamentos/Faturamentos';
 import Menu from './pages/Menu/Menu';
@@ -27,6 +28,8 @@ export default function App() {
           >
             <Route path="/" element={<Inicio />} />
             <Route path="/ordens" element={<OrdensServico />} />
+            <Route path="/ordens/nova" element={<OSForm />} />
+            <Route path="/ordens/:id" element={<OSForm />} />
             <Route path="/itens" element={<Itens />} />
             <Route path="/faturamentos" element={<Faturamentos />} />
             <Route path="/menu" element={<Menu />} />

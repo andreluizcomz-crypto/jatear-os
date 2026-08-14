@@ -427,6 +427,205 @@ a {
   padding-bottom: 8px;
 }
 
+/* ---------- Visibilidade por dispositivo (mobile-first) ---------- */
+
+.so-celular {
+  display: block;
+}
+
+.so-desktop,
+.so-desktop-inline {
+  display: none;
+}
+
+/* ---------- Mensagens ---------- */
+
+.mensagem-sucesso {
+  background: #E8F5E9;
+  color: var(--cor-sucesso);
+  border-radius: 4px;
+  padding: 12px;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.subtitulo-secao {
+  font-size: 16px;
+  margin: 16px 0 8px;
+}
+
+.campo textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--cinza-borda);
+  border-radius: 4px;
+  font-size: 16px;
+  resize: vertical;
+}
+
+.campo textarea:focus {
+  outline: 2px solid var(--jatear-vermelho);
+  outline-offset: -1px;
+}
+
+/* ---------- Grade de itens (desktop) ---------- */
+
+.rolagem-horizontal {
+  overflow-x: auto;
+  background: var(--branco);
+  border: 1px solid var(--cinza-borda);
+  border-radius: 8px;
+}
+
+.tabela-itens {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13px;
+}
+
+.tabela-itens th,
+.tabela-itens td {
+  border: 1px solid var(--cinza-borda);
+  padding: 4px 6px;
+  white-space: nowrap;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.tabela-itens th {
+  background: var(--cinza-claro);
+  font-size: 12px;
+}
+
+/* Primeira coluna (Seq) fixa na rolagem horizontal */
+.tabela-itens th:first-child,
+.tabela-itens td:first-child {
+  position: sticky;
+  left: 0;
+  background: var(--branco);
+  z-index: 1;
+}
+
+.tabela-itens th:first-child {
+  background: var(--cinza-claro);
+}
+
+.tabela-itens input,
+.tabela-itens select {
+  min-height: 32px;
+  font-size: 13px;
+  padding: 4px 6px;
+  border: 1px solid var(--cinza-borda);
+  border-radius: 3px;
+  width: 90px;
+}
+
+.tabela-itens input[type='date'] {
+  width: 130px;
+}
+
+.tabela-itens .col-descricao input {
+  width: 200px;
+}
+
+.tabela-itens .col-observacoes input {
+  width: 170px;
+  text-overflow: ellipsis;
+}
+
+.tabela-itens input:focus,
+.tabela-itens select:focus {
+  outline: 2px solid var(--jatear-vermelho);
+  outline-offset: -1px;
+}
+
+.tabela-itens tfoot td {
+  font-weight: bold;
+  background: var(--cinza-claro);
+}
+
+.celula-valor {
+  text-align: right !important;
+  font-weight: bold;
+}
+
+.linha-bloqueada td {
+  background: var(--cinza-claro);
+}
+
+.acoes-linha {
+  display: flex;
+  gap: 2px;
+}
+
+.acoes-linha button {
+  background: none;
+  border: none;
+  color: var(--cor-informacao);
+  font-size: 12px;
+  padding: 4px 6px;
+  cursor: pointer;
+}
+
+.acoes-linha .acao-excluir {
+  color: var(--cor-erro);
+}
+
+.indicador-obs {
+  color: var(--jatear-vermelho);
+}
+
+/* ---------- Rodapé fixo de totais da OS ---------- */
+
+.pagina-os {
+  padding-bottom: 120px;
+}
+
+.rodape-totais {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: var(--altura-nav-inferior);
+  background: var(--branco);
+  border-top: 1px solid var(--cinza-borda);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  z-index: 90;
+}
+
+.resumo-totais {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 13px;
+}
+
+/* ---------- Editor de item ---------- */
+
+.modal-item {
+  max-width: 860px;
+}
+
+.cartao-servico {
+  padding: 16px;
+  margin-bottom: 12px;
+  background: var(--cinza-claro);
+  border: 1px solid var(--cinza-borda);
+}
+
+.rodape-item-editor {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
 /* ---------- Menu ---------- */
 
 .lista-menu {
@@ -501,5 +700,25 @@ a {
     max-width: 640px;
     border-radius: 12px;
     padding: 24px;
+  }
+
+  .so-celular {
+    display: none;
+  }
+
+  .so-desktop {
+    display: block;
+  }
+
+  .so-desktop-inline {
+    display: inline;
+  }
+
+  .rodape-totais {
+    bottom: 0;
+  }
+
+  .pagina-os {
+    padding-bottom: 90px;
   }
 }

@@ -1,0 +1,289 @@
+import { useRef } from 'react';
+import { formatarMoeda } from '../../utils/formatadores';
+import { inputParaDataCurta } from '../../utils/datas';
+import { STATUS_ITEM, rotuloStatusItem } from '../../utils/constantes';
+
+function BadgeStatus({ status }) {
+  return (
+    <span
+      className="badge"
+      style={{ background: 'var(--cinza-claro)', color: STATUS_ITEM[status]?.cor || '#555' }}
+    >
+      {rotuloStatusItem(status)}
+    </span>
+  );
+}
+
+// Grade de itens: tabela editável em linha no desktop,
+// lista de cartões no celular (edição em tela cheia).
+export default function GradeItens({ itens, servicos, totais, podeEditar, acoes }) {
+  const inputCsv = useRef(null);
+
+  const linhaBloqueada = (item) => item.faturado === true || !podeEditar;
+
+  return (
+    <div>
+      <div className="barra-acoes" style={{ marginTop: 24 }}>
+        <h2 className="subtitulo-secao" style={{ margin: 0 }}>
+          Itens ({itens.length})
+        </h2>
+        {podeEditar && (
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button type="button" className="botao-secundario" onClick={() => inputCsv.current.click()}>
+              Importar CSV
+            </button>
+            <button type="button" className="botao-primario botao-acao" onClick={acoes.adicionar}>
+              Adicionar item
+            </button>
+            <input
+              ref={inputCsv}
+              type="file"
+              accept=".csv,text/csv"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                if (e.target.files[0]) acoes.importarCsv(e.target.files[0]);
+                e.target.value = '';
+              }}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* ---------- Desktop: tabela editável em linha ---------- */}
+      <div className="so-desktop rolagem-horizontal">
+        <table className="tabela-itens">
+          <thead>
+            <tr>
+              <th>Seq</th>
+              <th className="col-descricao">Descrição</th>
+              <th>Cód. peça</th>
+              <th>Qtd</th>
+              <th>Peso un. (kg)</th>
+              <th>Área un. (m²)</th>
+              <th>Serviço</th>
+              <th>Qtd cobrada</th>
+              <th>Preço un.</th>
+              <th>Valor</th>
+              <th>Recebimento</th>
+              <th>Prev. entrega</th>
+              <th className="col-observacoes">Observações</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {itens.map((item, indice) => {
+              const servicoPrincipal = item.servicos?.[0];
+              const bloqueada = linhaBloqueada(item);
+              return (
+                <tr key={item.id || `novo-${indice}`} className={bloqueada ? 'linha-bloqueada' : ''}>
+                  <td>{item.sequencia}</td>
+                  <td className="col-descricao">
+                    <input
+                      value={item.descricao}
+                      onChange={(e) => acoes.alterarItem(indice, 'descricao', e.target.value)}
+                      disabled={bloqueada}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      value={item.codigoPeca || ''}
+                      onChange={(e) => acoes.alterarItem(indice, 'codigoPeca', e.target.value)}
+                      disabled={bloqueada}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      value={item.quantidade}
+                      onChange={(e) => acoes.alterarItem(indice, 'quantidade', e.target.value)}
+                      disabled={bloqueada}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.01"
+                      min="0"
+                      value={item.pesoUnitarioKg || ''}
+                      onChange={(e) => acoes.alterarItem(indice, 'pesoUnitarioKg', e.target.value)}
+                      disabled={bloqueada}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.01"
+                      min="0"
+                      value={item.areaUnitariaM2 || ''}
+                      onChange={(e) => acoes.alterarItem(indice, 'areaUnitariaM2', e.target.value)}
+                      disabled={bloqueada}
+                    />
+                  </td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <select
+                        value={servicoPrincipal?.servicoCodigo || ''}
+                        onChange={(e) => acoes.alterarServicoPrincipal(indice, e.target.value)}
+                        disabled={bloqueada}
+                      >
+                        <option value="">—</option>
+                        {servicos.map((s) => (
+                          <option key={s.codigo} value={s.codigo}>
+                            {s.codigo}
+                          </option>
+                        ))}
+                      </select>
+                      {(item.servicos?.length || 0) > 1 && (
+                        <span className="badge badge-ativo" title="Item com mais de um serviço">
+                          +{item.servicos.length - 1}
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.01"
+                      min="0"
+                      value={servicoPrincipal?.quantidadeCobrada ?? ''}
+                      onChange={(e) => acoes.alterarQtdCobrada(indice, e.target.value)}
+                      disabled={bloqueada || !servicoPrincipal}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.01"
+                      min="0"
+                      value={servicoPrincipal?.precoUnitario ?? ''}
+                      onChange={(e) => acoes.alterarPrecoUnitario(indice, e.target.value)}
+                      disabled={bloqueada || !servicoPrincipal}
+                    />
+                  </td>
+                  <td className="celula-valor">{formatarMoeda(item.valorTotalItem)}</td>
+                  <td>
+                    <input
+                      type="date"
+                      value={item.dataRecebimento || ''}
+                      onChange={(e) => acoes.alterarItem(indice, 'dataRecebimento', e.target.value)}
+                      disabled={bloqueada}
+                    />
+                  </td>
+                  <td>
+                    <input
+                      type="date"
+                      value={item.dataPrevistaEntrega || ''}
+                      onChange={(e) =>
+                        acoes.alterarItem(indice, 'dataPrevistaEntrega', e.target.value)
+                      }
+                      disabled={bloqueada}
+                    />
+                  </td>
+                  <td className="col-observacoes">
+                    <input
+                      value={item.observacoes || ''}
+                      title={item.observacoes || ''}
+                      maxLength={500}
+                      placeholder=""
+                      onChange={(e) => acoes.alterarItem(indice, 'observacoes', e.target.value)}
+                      disabled={bloqueada}
+                    />
+                  </td>
+                  <td>
+                    <BadgeStatus status={item.status} />
+                    {item.faturado && item.faturamentoId && (
+                      <div className="linha-detalhe">Fat.: {item.notaFiscal || item.faturamentoId}</div>
+                    )}
+                  </td>
+                  <td>
+                    <div className="acoes-linha">
+                      <button type="button" onClick={() => acoes.editar(indice)} title="Editar em detalhe">
+                        Editar
+                      </button>
+                      {podeEditar && !item.faturado && (
+                        <>
+                          <button type="button" onClick={() => acoes.duplicar(indice)} title="Duplicar linha">
+                            Duplicar
+                          </button>
+                          <button
+                            type="button"
+                            className="acao-excluir"
+                            onClick={() => acoes.excluir(indice)}
+                            title="Excluir item"
+                          >
+                            Excluir
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+            {itens.length === 0 && (
+              <tr>
+                <td colSpan={15} className="texto-apoio" style={{ padding: 16 }}>
+                  Nenhum item lançado. Use "Adicionar item" ou "Importar CSV".
+                </td>
+              </tr>
+            )}
+          </tbody>
+          {itens.length > 0 && (
+            <tfoot>
+              <tr>
+                <td colSpan={3}>Totais</td>
+                <td>{totais.qtdPecas}</td>
+                <td>{totais.pesoTotalKg}</td>
+                <td>{totais.areaTotalM2}</td>
+                <td colSpan={3} />
+                <td className="celula-valor">{formatarMoeda(totais.valorTotal)}</td>
+                <td colSpan={5} />
+              </tr>
+            </tfoot>
+          )}
+        </table>
+      </div>
+
+      {/* ---------- Celular: lista de cartões ---------- */}
+      <div className="so-celular lista-registros">
+        {itens.map((item, indice) => (
+          <button
+            type="button"
+            key={item.id || `novo-${indice}`}
+            className="linha-registro"
+            onClick={() => acoes.editar(indice)}
+          >
+            <div className="linha-principal">
+              <strong>
+                {item.sequencia}. {item.descricao || '(sem descrição)'}
+                {item.observacoes && (
+                  <span className="indicador-obs" title="Item com observações">
+                    {' '}●
+                  </span>
+                )}
+              </strong>
+              <BadgeStatus status={item.status} />
+            </div>
+            <div className="linha-detalhe">
+              Qtd: {item.quantidade}
+              {(item.servicos || []).length > 0 &&
+                ` · ${item.servicos.map((s) => s.servicoCodigo).join(', ')}`}
+              {` · ${formatarMoeda(item.valorTotalItem)}`}
+              {item.dataPrevistaEntrega && ` · Prev.: ${inputParaDataCurta(item.dataPrevistaEntrega)}`}
+            </div>
+          </button>
+        ))}
+        {itens.length === 0 && (
+          <p className="texto-apoio">Nenhum item lançado. Use "Adicionar item".</p>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -20,6 +20,12 @@ service cloud.firestore {
       return usuarioAtivo() && docUsuario().perfil == 'administrador';
     }
 
+    // Produção cria e edita OS e itens (especificação seção 11)
+    function podeEditarOS() {
+      return usuarioAtivo() &&
+        (docUsuario().perfil == 'administrador' || docUsuario().perfil == 'producao');
+    }
+
     // ---------- usuarios ----------
     // Cada usuário lê o próprio perfil; administrador lê e escreve todos.
     match /usuarios/{uid} {
@@ -38,6 +44,36 @@ service cloud.firestore {
     match /servicos/{servicoId} {
       allow read: if usuarioAtivo();
       allow write: if ehAdministrador();
+    }
+
+    // ---------- ordens_servico ----------
+    match /ordens_servico/{osId} {
+      allow read: if usuarioAtivo();
+      allow create, update: if podeEditarOS();
+      allow delete: if false; // OS nunca é excluída — usar status cancelada
+    }
+
+    // ---------- itens (subcoleção de ordens_servico) ----------
+    // Padrão de grupo de coleção: vale para o caminho direto e para a
+    // consulta global por collectionGroup (Fase 4).
+    match /{caminho=**}/itens/{itemId} {
+      allow read: if usuarioAtivo();
+      allow create, update: if podeEditarOS();
+      // Item faturado não pode ser removido
+      allow delete: if podeEditarOS() && resource.data.faturado != true;
+    }
+
+    // ---------- contadores (numeração transacional OS/FAT) ----------
+    match /contadores/{contadorId} {
+      allow read: if usuarioAtivo();
+      allow write: if podeEditarOS();
+    }
+
+    // ---------- logs (auditoria) ----------
+    match /logs/{logId} {
+      allow create: if usuarioAtivo();
+      allow read: if ehAdministrador();
+      allow update, delete: if false;
     }
 
     // Qualquer outra coleção: bloqueada até a fase que a criar,
