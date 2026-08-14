@@ -575,6 +575,95 @@ a {
   color: var(--jatear-vermelho);
 }
 
+/* ---------- Consulta de itens ---------- */
+
+.filtros-rapidos {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.filtros-rapidos button {
+  min-height: 36px;
+  padding: 6px 14px;
+  border: 1px solid var(--jatear-vermelho);
+  color: var(--jatear-vermelho);
+  background: var(--branco);
+  border-radius: 18px;
+  font-size: 13px;
+  font-weight: bold;
+}
+
+.so-celular-inline {
+  display: inline-flex;
+}
+
+.painel-filtros {
+  background: var(--branco);
+  border: 1px solid var(--cinza-borda);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.caixa-multi {
+  border: 1px solid var(--cinza-borda);
+  border-radius: 4px;
+  padding: 8px;
+  max-height: 120px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--branco);
+}
+
+.opcao-multi {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  min-height: 28px;
+}
+
+.totais-consulta {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  background: var(--cinza-claro);
+  border: 1px solid var(--cinza-borda);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+}
+
+.tabela-consulta th {
+  cursor: pointer;
+  user-select: none;
+}
+
+.linha-atrasada td {
+  background: #FDECEA;
+}
+
+.badge-alerta {
+  background: #FDECEA;
+  color: var(--cor-erro);
+  font-size: 11px;
+}
+
+.link-tabela {
+  background: none;
+  border: none;
+  color: var(--cor-informacao);
+  font-size: 13px;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
 /* ---------- Ações em lote ---------- */
 
 .acoes-lote {
@@ -750,7 +839,8 @@ a {
     padding: 24px;
   }
 
-  .so-celular {
+  .so-celular,
+  .so-celular-inline {
     display: none;
   }
 
