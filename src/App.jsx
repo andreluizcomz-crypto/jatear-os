@@ -8,6 +8,9 @@ import OrdensServico from './pages/OrdensServico/OrdensServico';
 import Itens from './pages/Itens/Itens';
 import Faturamentos from './pages/Faturamentos/Faturamentos';
 import Menu from './pages/Menu/Menu';
+import Clientes from './pages/Clientes/Clientes';
+import ClienteForm from './pages/Clientes/ClienteForm';
+import Servicos from './pages/Servicos/Servicos';
 
 export default function App() {
   return (
@@ -27,6 +30,10 @@ export default function App() {
             <Route path="/itens" element={<Itens />} />
             <Route path="/faturamentos" element={<Faturamentos />} />
             <Route path="/menu" element={<Menu />} />
+            <Route path="/clientes" element={<Clientes />} />
+            <Route path="/clientes/novo" element={<ClienteForm />} />
+            <Route path="/clientes/:id" element={<ClienteForm />} />
+            <Route path="/servicos" element={<Servicos />} />
           </Route>
         </Routes>
       </BrowserRouter>

@@ -5,16 +5,27 @@ import {
   signOut,
 } from 'firebase/auth';
 import { auth } from '../firebase';
+import { buscarUsuario } from '../services/usuariosService';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [usuario, setUsuario] = useState(null);
+  const [perfilUsuario, setPerfilUsuario] = useState(null);
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
-    const cancelarObservador = onAuthStateChanged(auth, (usuarioAtual) => {
+    const cancelarObservador = onAuthStateChanged(auth, async (usuarioAtual) => {
       setUsuario(usuarioAtual);
+      if (usuarioAtual) {
+        try {
+          setPerfilUsuario(await buscarUsuario(usuarioAtual.uid));
+        } catch (_) {
+          setPerfilUsuario(null);
+        }
+      } else {
+        setPerfilUsuario(null);
+      }
       setCarregando(false);
     });
     return cancelarObservador;
@@ -28,8 +39,12 @@ export function AuthProvider({ children }) {
     return signOut(auth);
   }
 
+  const ehAdministrador = perfilUsuario?.perfil === 'administrador';
+
   return (
-    <AuthContext.Provider value={{ usuario, carregando, entrar, sair }}>
+    <AuthContext.Provider
+      value={{ usuario, perfilUsuario, ehAdministrador, carregando, entrar, sair }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -1,8 +1,9 @@
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { IconeSair } from '../../components/Icones';
+import { IconeItens, IconeOS, IconeSair } from '../../components/Icones';
 
 export default function Menu() {
-  const { usuario, sair } = useAuth();
+  const { usuario, perfilUsuario, sair } = useAuth();
 
   return (
     <div>
@@ -11,12 +12,30 @@ export default function Menu() {
       <div className="cartao" style={{ marginBottom: 16 }}>
         <p className="texto-apoio">Conectado como:</p>
         <p style={{ fontWeight: 'bold', marginTop: 4 }}>{usuario?.email}</p>
+        {perfilUsuario && (
+          <p className="texto-apoio" style={{ marginTop: 4 }}>
+            Perfil: {perfilUsuario.perfil}
+          </p>
+        )}
+      </div>
+
+      <h2 className="texto-apoio" style={{ fontWeight: 'bold', marginBottom: 8 }}>
+        Cadastros
+      </h2>
+      <div className="lista-menu" style={{ marginBottom: 16 }}>
+        <Link to="/clientes">
+          <IconeOS width={20} height={20} />
+          Clientes
+        </Link>
+        <Link to="/servicos">
+          <IconeItens width={20} height={20} />
+          Serviços
+        </Link>
       </div>
 
       <div className="cartao">
         <p className="texto-apoio" style={{ marginBottom: 16 }}>
-          Cadastros, administração e relatórios serão listados aqui nas
-          próximas fases.
+          Administração, relatórios e logs serão listados aqui nas próximas fases.
         </p>
         <button
           type="button"

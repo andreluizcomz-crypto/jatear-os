@@ -1,0 +1,49 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function autenticado() {
+      return request.auth != null;
+    }
+
+    // Documento de perfil do usuário conectado (usuarios/{uid})
+    function docUsuario() {
+      return get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data;
+    }
+
+    function usuarioAtivo() {
+      return autenticado() && docUsuario().ativo == true;
+    }
+
+    function ehAdministrador() {
+      return usuarioAtivo() && docUsuario().perfil == 'administrador';
+    }
+
+    // ---------- usuarios ----------
+    // Cada usuário lê o próprio perfil; administrador lê e escreve todos.
+    match /usuarios/{uid} {
+      allow read: if autenticado() && (request.auth.uid == uid || ehAdministrador());
+      allow write: if ehAdministrador();
+    }
+
+    // ---------- clientes ----------
+    // Leitura para qualquer usuário ativo; escrita somente administrador.
+    match /clientes/{clienteId} {
+      allow read: if usuarioAtivo();
+      allow write: if ehAdministrador();
+    }
+
+    // ---------- servicos ----------
+    match /servicos/{servicoId} {
+      allow read: if usuarioAtivo();
+      allow write: if ehAdministrador();
+    }
+
+    // Qualquer outra coleção: bloqueada até a fase que a criar,
+    // quando as regras dela serão escritas junto.
+    match /{documento=**} {
+      allow read, write: if false;
+    }
+  }
+}
