@@ -259,6 +259,15 @@ export default function GradeItens({
                       <button type="button" onClick={() => acoes.editar(indice)} title="Editar em detalhe">
                         Editar
                       </button>
+                      {item.id && (
+                        <button
+                          type="button"
+                          onClick={() => acoes.editar(indice)}
+                          title="Anexar ou ver fotos do item"
+                        >
+                          Fotos{(item.fotos || []).length > 0 && ` (${item.fotos.length})`}
+                        </button>
+                      )}
                       {podeEditar && !item.faturado && (
                         <button type="button" onClick={() => acoes.duplicar(indice)} title="Duplicar linha">
                           Duplicar
@@ -333,6 +342,7 @@ export default function GradeItens({
                 ` · ${item.servicos.map((s) => s.servicoCodigo).join(', ')}`}
               {podeVerValores && ` · ${formatarMoeda(item.valorTotalItem)}`}
               {item.dataPrevistaEntrega && ` · Prev.: ${inputParaDataCurta(item.dataPrevistaEntrega)}`}
+              {(item.fotos || []).length > 0 && ` · ${item.fotos.length} foto(s)`}
             </div>
           </button>
         ))}
