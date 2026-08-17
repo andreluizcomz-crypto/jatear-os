@@ -968,9 +968,24 @@ input[type='checkbox'],
   height: 18px;
   min-height: 0;
   padding: 0;
+  margin: 0;
   flex: 0 0 auto;
+  vertical-align: middle;
   accent-color: var(--jatear-vermelho);
   cursor: pointer;
+}
+
+/* Na coluna de seleção das tabelas, a caixa fica centralizada na célula */
+.tabela-itens th input[type='checkbox'],
+.tabela-itens td input[type='checkbox'] {
+  display: block;
+  margin: 0 auto;
+}
+
+.tabela-itens th:has(input[type='checkbox']),
+.tabela-itens td:has(input[type='checkbox']) {
+  text-align: center;
+  width: 34px;
 }
 
 /* ---------- Tablet e desktop ---------- */
