@@ -82,6 +82,8 @@ export default function OSForm() {
     contatoCliente: '',
     dataAbertura: hojeInput(),
     dataPrevistaEntrega: '',
+    formaPagamento: '',
+    prazoPagamentoDias: '',
     observacoes: '',
   });
   const [itens, setItens] = useState([]);
@@ -143,6 +145,8 @@ export default function OSForm() {
         contatoCliente: registro.contatoCliente || '',
         dataAbertura: dataParaInput(registro.dataAbertura),
         dataPrevistaEntrega: dataParaInput(registro.dataPrevistaEntrega),
+        formaPagamento: registro.formaPagamento || '',
+        prazoPagamentoDias: registro.prazoPagamentoDias || '',
         observacoes: registro.observacoes || '',
       });
       const itensCarregados = (await listarItens(id)).map(itemDoBanco);
@@ -205,6 +209,8 @@ export default function OSForm() {
       contatoCliente: cabecalho.contatoCliente,
       dataAbertura: inputParaTimestamp(cabecalho.dataAbertura),
       dataPrevistaEntrega: inputParaTimestamp(cabecalho.dataPrevistaEntrega),
+      formaPagamento: cabecalho.formaPagamento.trim(),
+      prazoPagamentoDias: Number(cabecalho.prazoPagamentoDias) || 0,
       observacoes: cabecalho.observacoes,
     };
   }
@@ -856,6 +862,36 @@ export default function OSForm() {
                 type="date"
                 value={cabecalho.dataPrevistaEntrega}
                 onChange={(e) => alterarCabecalho('dataPrevistaEntrega', e.target.value)}
+              />
+            </div>
+            <div className="campo">
+              <label htmlFor="formaPagamento">Forma de pagamento</label>
+              <input
+                id="formaPagamento"
+                list="formas-pagamento"
+                value={cabecalho.formaPagamento}
+                onChange={(e) => alterarCabecalho('formaPagamento', e.target.value)}
+                placeholder="Ex.: Boleto bancário"
+              />
+              <datalist id="formas-pagamento">
+                <option value="Boleto bancário" />
+                <option value="PIX" />
+                <option value="Transferência bancária" />
+                <option value="Depósito" />
+              </datalist>
+            </div>
+            <div className="campo">
+              <label htmlFor="prazoPagamento">
+                Prazo de pagamento (dias após emissão da NF)
+              </label>
+              <input
+                id="prazoPagamento"
+                type="number"
+                inputMode="numeric"
+                min="0"
+                value={cabecalho.prazoPagamentoDias}
+                onChange={(e) => alterarCabecalho('prazoPagamentoDias', e.target.value)}
+                placeholder="Ex.: 30"
               />
             </div>
             <div className="campo campo-largo">

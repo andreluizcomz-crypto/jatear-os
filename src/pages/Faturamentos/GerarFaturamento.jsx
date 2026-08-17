@@ -4,6 +4,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { gerarFaturamento } from '../../services/faturamentosService';
+import { buscarOS } from '../../services/osService';
 import { formatarMoeda } from '../../utils/formatadores';
 import { dataParaInput, inputParaTimestamp } from '../../utils/datas';
 
@@ -32,6 +33,8 @@ export default function GerarFaturamento() {
   const [criterioData, setCriterioData] = useState('conclusao');
   const [periodoInicio, setPeriodoInicio] = useState('');
   const [periodoFim, setPeriodoFim] = useState('');
+  const [formaPagamento, setFormaPagamento] = useState('');
+  const [prazoPagamentoDias, setPrazoPagamentoDias] = useState('');
   const [observacoes, setObservacoes] = useState('');
   const [gerando, setGerando] = useState(false);
 
@@ -80,6 +83,17 @@ export default function GerarFaturamento() {
           setPeriodoInicio(datas[0]);
           setPeriodoFim(datas[datas.length - 1]);
         }
+
+        // Condições de pagamento sugeridas pelas OS dos itens selecionados
+        const osIds = [...new Set(validos.map((i) => i.osId))];
+        Promise.all(osIds.map(buscarOS)).then((listaOS) => {
+          const formas = new Set(listaOS.map((o) => o?.formaPagamento).filter(Boolean));
+          const prazos = new Set(
+            listaOS.map((o) => o?.prazoPagamentoDias).filter((p) => Number(p) > 0)
+          );
+          if (formas.size === 1) setFormaPagamento([...formas][0]);
+          if (prazos.size === 1) setPrazoPagamentoDias([...prazos][0]);
+        });
       })
       .catch(() => setErro('Não foi possível carregar os itens selecionados.'))
       .finally(() => setCarregando(false));
@@ -106,6 +120,8 @@ export default function GerarFaturamento() {
           periodoInicio: inputParaTimestamp(periodoInicio),
           periodoFim: inputParaTimestamp(periodoFim),
           subclienteNome: subclientes.size === 1 ? [...subclientes][0] : '',
+          formaPagamento: formaPagamento.trim(),
+          prazoPagamentoDias,
           observacoes,
         },
         usuario.uid
@@ -176,6 +192,31 @@ export default function GerarFaturamento() {
           <div className="campo">
             <label>Período — até</label>
             <input type="date" value={periodoFim} onChange={(e) => setPeriodoFim(e.target.value)} />
+          </div>
+          <div className="campo">
+            <label>Forma de pagamento</label>
+            <input
+              list="formas-pagamento-fat"
+              value={formaPagamento}
+              onChange={(e) => setFormaPagamento(e.target.value)}
+              placeholder="Ex.: Boleto bancário"
+            />
+            <datalist id="formas-pagamento-fat">
+              <option value="Boleto bancário" />
+              <option value="PIX" />
+              <option value="Transferência bancária" />
+            </datalist>
+          </div>
+          <div className="campo">
+            <label>Prazo de pagamento (dias após a NF)</label>
+            <input
+              type="number"
+              inputMode="numeric"
+              min="0"
+              value={prazoPagamentoDias}
+              onChange={(e) => setPrazoPagamentoDias(e.target.value)}
+              placeholder="Ex.: 30"
+            />
           </div>
           <div className="campo campo-largo">
             <label>Observações</label>

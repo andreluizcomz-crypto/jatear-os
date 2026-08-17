@@ -40,6 +40,12 @@ export function gerarPdfOS(os, cliente, itens, opcoes = {}) {
       `Abertura: ${formatarData(os.dataAbertura)}   Previsão de entrega: ${formatarData(
         os.dataPrevistaEntrega
       )}` + (os.solicitante ? `   Solicitante: ${os.solicitante}` : ''),
+      os.formaPagamento || os.prazoPagamentoDias > 0
+        ? `Pagamento: ${os.formaPagamento || 'a definir'}` +
+          (os.prazoPagamentoDias > 0
+            ? ` — ${os.prazoPagamentoDias} dias após emissão da NF`
+            : '')
+        : '',
       os.observacoes ? `Observações: ${os.observacoes}` : '',
     ].filter(Boolean);
     linhas.forEach((linha, i) => doc.text(linha, 14, y + i * 5));

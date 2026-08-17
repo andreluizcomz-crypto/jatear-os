@@ -5,6 +5,12 @@ import { listarFaturamentos } from '../../services/faturamentosService';
 import { listarTodosItens } from '../../services/consultaService';
 import { formatarData, formatarMoeda } from '../../utils/formatadores';
 
+// Faturamento emitido, não recebido e com vencimento no passado
+function vencido(fat) {
+  const prevista = fat.dataPrevistaRecebimento?.toDate?.();
+  return Boolean(prevista && prevista < new Date());
+}
+
 export default function Faturamentos() {
   const navegar = useNavigate();
   const { podeVerValores } = useAuth();
@@ -84,8 +90,24 @@ export default function Faturamentos() {
               <strong>
                 {fat.numero} — {fat.clienteNome}
               </strong>
-              <span className={fat.status === 'emitido' ? 'badge badge-ativo' : 'badge badge-inativo'}>
-                {fat.status === 'emitido' ? 'Emitido' : 'Cancelado'}
+              <span style={{ display: 'flex', gap: 6 }}>
+                {fat.status === 'emitido' && fat.statusPagamento === 'recebido' && (
+                  <span className="badge badge-ativo">Recebido</span>
+                )}
+                {fat.status === 'emitido' &&
+                  fat.statusPagamento !== 'recebido' &&
+                  (vencido(fat) ? (
+                    <span className="badge badge-alerta">Vencido</span>
+                  ) : (
+                    <span className="badge" style={{ background: 'var(--cinza-claro)', color: '#ED6C02' }}>
+                      A receber
+                    </span>
+                  ))}
+                <span
+                  className={fat.status === 'emitido' ? 'badge badge-ativo' : 'badge badge-inativo'}
+                >
+                  {fat.status === 'emitido' ? 'Emitido' : 'Cancelado'}
+                </span>
               </span>
             </div>
             <div className="linha-detalhe">
@@ -95,6 +117,8 @@ export default function Faturamentos() {
               {` · ${fat.qtdItens} item(ns)`}
               {podeVerValores && ` · ${formatarMoeda(fat.valorTotal)}`}
               {fat.notaFiscal && ` · NF ${fat.notaFiscal}`}
+              {fat.dataPrevistaRecebimento &&
+                ` · Vencimento: ${formatarData(fat.dataPrevistaRecebimento)}`}
             </div>
           </button>
         ))}

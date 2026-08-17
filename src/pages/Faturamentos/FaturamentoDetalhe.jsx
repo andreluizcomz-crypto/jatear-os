@@ -4,10 +4,11 @@ import { useAuth } from '../../contexts/AuthContext';
 import {
   buscarFaturamento,
   cancelarFaturamento,
+  confirmarRecebimento,
   registrarNotaFiscal,
 } from '../../services/faturamentosService';
 import { formatarData, formatarMoeda, rotuloUnidade } from '../../utils/formatadores';
-import { dataParaInput, inputParaTimestamp } from '../../utils/datas';
+import { dataParaInput, hojeInput, inputParaDataCurta, somarDias } from '../../utils/datas';
 import { gerarPdfFaturamento } from '../../services/pdfService';
 import Justificativa from '../../components/Justificativa';
 
@@ -23,8 +24,10 @@ export default function FaturamentoDetalhe() {
   const [aviso, setAviso] = useState('');
   const [modalNF, setModalNF] = useState(false);
   const [modalCancelar, setModalCancelar] = useState(false);
+  const [modalRecebimento, setModalRecebimento] = useState(false);
   const [notaFiscal, setNotaFiscal] = useState('');
   const [dataNota, setDataNota] = useState('');
+  const [dataRecebimento, setDataRecebimento] = useState(hojeInput());
   const [processando, setProcessando] = useState(false);
 
   async function carregar() {
@@ -49,7 +52,7 @@ export default function FaturamentoDetalhe() {
     setProcessando(true);
     setErro('');
     try {
-      await registrarNotaFiscal(id, notaFiscal.trim(), inputParaTimestamp(dataNota), usuario.uid);
+      await registrarNotaFiscal(id, notaFiscal.trim(), dataNota, usuario.uid);
       setModalNF(false);
       setAviso('Nota fiscal registrada.');
       await carregar();
@@ -61,6 +64,21 @@ export default function FaturamentoDetalhe() {
       } else {
         setErro('Não foi possível registrar a NF. Verifique sua permissão.');
       }
+    } finally {
+      setProcessando(false);
+    }
+  }
+
+  async function aoConfirmarRecebimento() {
+    setProcessando(true);
+    setErro('');
+    try {
+      await confirmarRecebimento(id, dataRecebimento, usuario.uid);
+      setModalRecebimento(false);
+      setAviso('Recebimento confirmado.');
+      await carregar();
+    } catch (_) {
+      setErro('Não foi possível confirmar o recebimento.');
     } finally {
       setProcessando(false);
     }
@@ -108,6 +126,15 @@ export default function FaturamentoDetalhe() {
               <button type="button" className="botao-secundario" onClick={() => setModalNF(true)}>
                 Registrar NF
               </button>
+              {faturamento.statusPagamento !== 'recebido' && (
+                <button
+                  type="button"
+                  className="botao-secundario"
+                  onClick={() => setModalRecebimento(true)}
+                >
+                  Confirmar recebimento
+                </button>
+              )}
               <button
                 type="button"
                 className="botao-secundario"
@@ -146,6 +173,25 @@ export default function FaturamentoDetalhe() {
               NF: <strong>{faturamento.notaFiscal}</strong>
               {faturamento.dataNotaFiscal && ` em ${formatarData(faturamento.dataNotaFiscal)}`}
             </>
+          )}
+          {(faturamento.formaPagamento || faturamento.prazoPagamentoDias > 0) && (
+            <>
+              <br />
+              Pagamento: <strong>{faturamento.formaPagamento || 'não informado'}</strong>
+              {faturamento.prazoPagamentoDias > 0 &&
+                ` · ${faturamento.prazoPagamentoDias} dias após emissão da NF`}
+              {faturamento.dataPrevistaRecebimento &&
+                ` · Vencimento: ${formatarData(faturamento.dataPrevistaRecebimento)}`}
+            </>
+          )}
+          <br />
+          Situação do pagamento:{' '}
+          {faturamento.statusPagamento === 'recebido' ? (
+            <span className="badge badge-ativo">
+              Recebido em {formatarData(faturamento.dataRecebimento)}
+            </span>
+          ) : (
+            <span className="badge badge-alerta">A receber</span>
           )}
         </div>
       </div>
@@ -224,6 +270,12 @@ export default function FaturamentoDetalhe() {
                   value={dataNota}
                   onChange={(e) => setDataNota(e.target.value)}
                 />
+                {dataNota && faturamento.prazoPagamentoDias > 0 && (
+                  <span className="dica-campo">
+                    Vencimento: {inputParaDataCurta(somarDias(dataNota, faturamento.prazoPagamentoDias))}{' '}
+                    ({faturamento.prazoPagamentoDias} dias)
+                  </span>
+                )}
               </div>
             </div>
             <div className="acoes-modal">
@@ -237,6 +289,44 @@ export default function FaturamentoDetalhe() {
                 disabled={processando || !notaFiscal.trim()}
               >
                 Salvar NF
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {modalRecebimento && (
+        <div className="modal-fundo" onClick={() => setModalRecebimento(false)}>
+          <div className="modal-conteudo" onClick={(e) => e.stopPropagation()}>
+            <h2 className="titulo-modal">Confirmar recebimento</h2>
+            <p className="texto-apoio" style={{ marginBottom: 12 }}>
+              Registre a data em que o pagamento de {formatarMoeda(faturamento.valorTotal)} foi
+              recebido.
+            </p>
+            <div className="campo">
+              <label htmlFor="dataRecebimento">Data do recebimento</label>
+              <input
+                id="dataRecebimento"
+                type="date"
+                value={dataRecebimento}
+                onChange={(e) => setDataRecebimento(e.target.value)}
+              />
+            </div>
+            <div className="acoes-modal">
+              <button
+                type="button"
+                className="botao-secundario"
+                onClick={() => setModalRecebimento(false)}
+              >
+                Voltar
+              </button>
+              <button
+                type="button"
+                className="botao-primario botao-acao"
+                onClick={aoConfirmarRecebimento}
+                disabled={processando || !dataRecebimento}
+              >
+                Confirmar recebimento
               </button>
             </div>
           </div>

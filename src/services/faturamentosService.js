@@ -7,11 +7,13 @@ import {
   query,
   runTransaction,
   serverTimestamp,
+  updateDoc,
   writeBatch,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { registrarLog } from './logsService';
 import { recalcularOS } from './osService';
+import { inputParaTimestamp, somarDias } from '../utils/datas';
 
 export async function listarFaturamentos() {
   const resultado = await getDocs(
@@ -97,6 +99,11 @@ export async function gerarFaturamento(chaves, dados, uid) {
       status: 'emitido',
       notaFiscal: '',
       dataNotaFiscal: null,
+      formaPagamento: dados.formaPagamento || '',
+      prazoPagamentoDias: Number(dados.prazoPagamentoDias) || 0,
+      dataPrevistaRecebimento: null, // definida ao registrar a NF
+      statusPagamento: 'aguardando',
+      dataRecebimento: null,
       observacoes: dados.observacoes || '',
       geradoPor: uid,
       geradoEm: serverTimestamp(),
@@ -165,21 +172,47 @@ export async function cancelarFaturamento(faturamentoId, motivo, uid) {
   );
 }
 
-// Registro manual do número da NF (o sistema não emite nota)
-export async function registrarNotaFiscal(faturamentoId, notaFiscal, dataNota, uid) {
+// Registro manual do número da NF (o sistema não emite nota).
+// dataNotaInput no formato AAAA-MM-DD; o vencimento é calculado
+// somando o prazo de pagamento à data da NF.
+export async function registrarNotaFiscal(faturamentoId, notaFiscal, dataNotaInput, uid) {
   const faturamento = await buscarFaturamento(faturamentoId);
   if (!faturamento) throw new Error('faturamento-invalido');
   // Faturamento cancelado não recebe NF — os itens já pertencem a outro fluxo
   if (faturamento.status !== 'emitido') throw new Error('faturamento-cancelado');
 
+  const prazo = Number(faturamento.prazoPagamentoDias) || 0;
+  const dataPrevistaRecebimento =
+    dataNotaInput && prazo > 0
+      ? inputParaTimestamp(somarDias(dataNotaInput, prazo))
+      : null;
+
   const lote = writeBatch(db);
   lote.update(doc(db, 'faturamentos', faturamentoId), {
     notaFiscal,
-    dataNotaFiscal: dataNota || null,
+    dataNotaFiscal: inputParaTimestamp(dataNotaInput),
+    dataPrevistaRecebimento,
   });
   faturamento.itens.forEach((item) =>
     lote.update(doc(db, 'ordens_servico', item.osId, 'itens', item.itemId), { notaFiscal })
   );
   await lote.commit();
   registrarLog('nf_registrada', 'faturamentos', faturamentoId, { notaFiscal }, uid);
+}
+
+// Confirmação de recebimento do pagamento (data no formato AAAA-MM-DD)
+export async function confirmarRecebimento(faturamentoId, dataRecebimentoInput, uid) {
+  const faturamento = await buscarFaturamento(faturamentoId);
+  if (!faturamento || faturamento.status !== 'emitido') throw new Error('faturamento-invalido');
+  await updateDoc(doc(db, 'faturamentos', faturamentoId), {
+    statusPagamento: 'recebido',
+    dataRecebimento: inputParaTimestamp(dataRecebimentoInput),
+  });
+  registrarLog(
+    'recebimento_confirmado',
+    'faturamentos',
+    faturamentoId,
+    { numero: faturamento.numero, data: dataRecebimentoInput },
+    uid
+  );
 }
