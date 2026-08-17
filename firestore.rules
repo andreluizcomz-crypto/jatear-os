@@ -65,8 +65,15 @@ service cloud.firestore {
     // consulta global por collectionGroup (Fase 4).
     match /{caminho=**}/itens/{itemId} {
       allow read: if usuarioAtivo();
-      allow create: if podeEditarOS();
-      allow update: if podeEditarOS() || podeFaturar();
+      // Item novo nunca nasce faturado
+      allow create: if podeEditarOS() && request.resource.data.faturado != true;
+      // Item faturado é imutável para Produção; marcar/desmarcar `faturado`
+      // é exclusivo da rotina de faturamento (perfil faturamento/admin)
+      allow update: if podeFaturar()
+        || (podeEditarOS()
+            && resource.data.faturado != true
+            && request.resource.data.faturado != true
+            && request.resource.data.status != 'faturado');
       // Item faturado não pode ser removido
       allow delete: if podeEditarOS() && resource.data.faturado != true;
     }
@@ -75,6 +82,13 @@ service cloud.firestore {
     match /contadores/{contadorId} {
       allow read: if usuarioAtivo();
       allow write: if podeEditarOS() || podeFaturar();
+    }
+
+    // ---------- numeros_os (reserva de números de OS — nunca reutilizados) ----------
+    match /numeros_os/{numero} {
+      allow read: if usuarioAtivo();
+      allow create: if podeEditarOS();
+      allow update, delete: if false;
     }
 
     // ---------- faturamentos ----------

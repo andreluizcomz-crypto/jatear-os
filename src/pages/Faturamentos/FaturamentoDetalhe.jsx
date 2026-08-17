@@ -53,8 +53,14 @@ export default function FaturamentoDetalhe() {
       setModalNF(false);
       setAviso('Nota fiscal registrada.');
       await carregar();
-    } catch (_) {
-      setErro('Não foi possível registrar a NF. Verifique sua permissão.');
+    } catch (excecao) {
+      if (excecao.message === 'faturamento-cancelado') {
+        setModalNF(false);
+        setErro('Este faturamento foi cancelado em outra tela — a NF não foi registrada.');
+        await carregar();
+      } else {
+        setErro('Não foi possível registrar a NF. Verifique sua permissão.');
+      }
     } finally {
       setProcessando(false);
     }

@@ -1,11 +1,10 @@
-import { useState } from 'react';
-import { rotuloUnidade } from '../../utils/formatadores';
-import { formatarMoeda } from '../../utils/formatadores';
+import { useRef, useState } from 'react';
+import { formatarMoeda, rotuloUnidade } from '../../utils/formatadores';
 import {
   calcularItem,
   sugerirQuantidadeCobrada,
 } from '../../services/itensService';
-import { rotuloStatusItem, statusDisponiveis } from '../../utils/constantes';
+import { ehRetrocesso, rotuloStatusItem, statusDisponiveis } from '../../utils/constantes';
 import { hojeInput } from '../../utils/datas';
 import { excluirFoto, iniciarEnvioFoto } from '../../services/fotosService';
 
@@ -26,6 +25,17 @@ export default function ItemEditor({
   const [fotoAmpliada, setFotoAmpliada] = useState(null);
   const bloqueado = dados.faturado === true;
 
+  // Fotos são gravadas no Storage na hora do envio, mas o item só é
+  // atualizado no "Aplicar" — estes controles evitam órfãos e quebras:
+  // cancelar apaga as fotos novas; remoção de foto antiga só apaga ao aplicar.
+  const fotosNovas = useRef([]);
+  const fotosRemovidas = useRef([]);
+
+  function fecharSemAplicar() {
+    fotosNovas.current.forEach((caminho) => excluirFoto(caminho));
+    onFechar();
+  }
+
   async function enviarFoto(tipo, arquivo) {
     setErro('');
     try {
@@ -38,6 +48,7 @@ export default function ItemEditor({
       );
       setEnvio({ tipo, progresso: 0, tarefa });
       const foto = await promessa;
+      fotosNovas.current.push(foto.caminho);
       setDados((atual) => ({ ...atual, fotos: [...(atual.fotos || []), foto] }));
       setEnvio(null);
     } catch (excecao) {
@@ -49,7 +60,16 @@ export default function ItemEditor({
   }
 
   function removerFoto(foto) {
-    if (foto.caminho) excluirFoto(foto.caminho);
+    if (foto.caminho) {
+      if (fotosNovas.current.includes(foto.caminho)) {
+        // Foto enviada nesta sessão de edição: pode apagar já
+        excluirFoto(foto.caminho);
+        fotosNovas.current = fotosNovas.current.filter((c) => c !== foto.caminho);
+      } else {
+        // Foto já salva no item: só apaga do Storage se o usuário aplicar
+        fotosRemovidas.current.push(foto.caminho);
+      }
+    }
     setDados((atual) => ({ ...atual, fotos: (atual.fotos || []).filter((f) => f !== foto) }));
   }
 
@@ -62,6 +82,9 @@ export default function ItemEditor({
         }
         if (valor === 'entregue' && !novo.dataEntrega) {
           novo.dataEntrega = hojeInput();
+        }
+        if (ehRetrocesso(atual.status, valor) && !novo._retrocessoDe) {
+          novo._retrocessoDe = atual.status;
         }
       }
       if (['quantidade', 'pesoUnitarioKg', 'areaUnitariaM2'].includes(campo)) {
@@ -141,11 +164,13 @@ export default function ItemEditor({
       setErro('Informe a data de conclusão.');
       return;
     }
+    // Só agora as fotos removidas saem do Storage — quem cancela não perde nada
+    fotosRemovidas.current.forEach((caminho) => excluirFoto(caminho));
     onSalvar(dados);
   }
 
   return (
-    <div className="modal-fundo" onClick={onFechar}>
+    <div className="modal-fundo" onClick={fecharSemAplicar}>
       <div className="modal-conteudo modal-item" onClick={(e) => e.stopPropagation()}>
         <h2 className="titulo-modal">
           Item {dados.sequencia} · {rotuloStatusItem(dados.status)}
@@ -413,8 +438,8 @@ export default function ItemEditor({
         <div className="rodape-item-editor">
           <strong>Total do item: {formatarMoeda(dados.valorTotalItem)}</strong>
           <div className="acoes-modal">
-            <button type="button" className="botao-secundario" onClick={onFechar}>
-              Cancelar
+            <button type="button" className="botao-secundario" onClick={fecharSemAplicar}>
+              Descartar
             </button>
             {!bloqueado && (
               <button type="button" className="botao-primario botao-acao" onClick={aoSalvar}>

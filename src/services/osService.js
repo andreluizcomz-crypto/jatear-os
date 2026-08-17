@@ -55,8 +55,11 @@ const TOTAIS_ZERADOS = {
 
 // Status derivado da OS a partir dos itens (especificação 6.2)
 export function derivarStatusOS(itens) {
+  if (itens.length === 0) return 'aberta';
   const ativos = itens.filter((i) => i.status !== 'cancelado');
-  if (ativos.length === 0 || ativos.every((i) => i.status === 'recebido')) return 'aberta';
+  // Todos os itens cancelados: "todos concluído/entregue/cancelado" → concluída
+  if (ativos.length === 0) return 'concluida';
+  if (ativos.every((i) => i.status === 'recebido')) return 'aberta';
   if (ativos.every((i) => i.status === 'faturado')) return 'faturada';
   if (ativos.some((i) => i.status === 'faturado')) return 'parcialmente_faturada';
   if (ativos.every((i) => ['concluido', 'entregue'].includes(i.status))) return 'concluida';
@@ -109,11 +112,19 @@ export async function criarOS(cabecalho, uid) {
 
   await runTransaction(db, async (transacao) => {
     const contadorRef = doc(db, 'contadores', `os_${ano}`);
-    const contador = await transacao.get(contadorRef);
+    // Reserva do número dentro da transação — impede que dois usuários
+    // criando OS ao mesmo tempo gravem o mesmo número
+    const reservaRef = doc(db, 'numeros_os', cabecalho.numero);
+    const [contador, reserva] = await Promise.all([
+      transacao.get(contadorRef),
+      transacao.get(reservaRef),
+    ]);
+    if (reserva.exists()) throw new Error('numero-duplicado');
     const ultimo = contador.exists() ? contador.data().ultimoNumero : 0;
     if (sequencial > ultimo) {
       transacao.set(contadorRef, { prefixo: 'OS', ano, ultimoNumero: sequencial });
     }
+    transacao.set(reservaRef, { osId: osRef.id, criadoEm: serverTimestamp() });
     transacao.set(osRef, {
       ...cabecalho,
       numeroSequencial: sequencial,
@@ -149,11 +160,20 @@ export async function atualizarCabecalhoOS(osId, cabecalho, anterior, itens, uid
     const { ano, sequencial } = partesNumero(cabecalho.numero);
     await runTransaction(db, async (transacao) => {
       const contadorRef = doc(db, 'contadores', `os_${ano}`);
-      const contador = await transacao.get(contadorRef);
+      const reservaRef = doc(db, 'numeros_os', cabecalho.numero);
+      const [contador, reserva] = await Promise.all([
+        transacao.get(contadorRef),
+        transacao.get(reservaRef),
+      ]);
+      if (reserva.exists() && reserva.data().osId !== osId) {
+        throw new Error('numero-duplicado');
+      }
       const ultimo = contador.exists() ? contador.data().ultimoNumero : 0;
       if (sequencial > ultimo) {
         transacao.set(contadorRef, { prefixo: 'OS', ano, ultimoNumero: sequencial });
       }
+      // A reserva do número antigo permanece — número nunca é reutilizado
+      transacao.set(reservaRef, { osId, criadoEm: serverTimestamp() });
     });
     registrarLog(
       'os_numero_alterado',

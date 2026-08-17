@@ -78,7 +78,11 @@ export async function salvarItens(osId, cabecalho, itens, uid) {
       atualizadoEm: serverTimestamp(),
       atualizadoPor: uid,
     };
+    // Campos de controle da tela nunca vão para o banco; `id` indefinido
+    // derrubaria o lote inteiro (Firestore rejeita undefined)
     delete dados._alterado;
+    delete dados._retrocessoDe;
+    delete dados.id;
     if (!item.id) {
       const ref = doc(colecao);
       dados.criadoEm = serverTimestamp();
@@ -87,8 +91,7 @@ export async function salvarItens(osId, cabecalho, itens, uid) {
       return { ...calculado, id: ref.id };
     }
     if (item._alterado) {
-      const { id, ...semId } = dados;
-      lote.update(doc(colecao, item.id), semId);
+      lote.update(doc(colecao, item.id), dados);
       alterados++;
     }
     return calculado;

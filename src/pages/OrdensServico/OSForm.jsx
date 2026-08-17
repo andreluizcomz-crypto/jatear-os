@@ -6,8 +6,11 @@ import { listarServicos } from '../../services/servicosService';
 import {
   atualizarCabecalhoOS,
   buscarOS,
+  calcularTotaisOS,
   cancelarOS,
   criarOS,
+  derivarStatusOS,
+  recalcularOS,
   sugerirNumeroOS,
 } from '../../services/osService';
 import { registrarLog } from '../../services/logsService';
@@ -126,7 +129,25 @@ export default function OSForm() {
         dataPrevistaEntrega: dataParaInput(registro.dataPrevistaEntrega),
         observacoes: registro.observacoes || '',
       });
-      setItens((await listarItens(id)).map(itemDoBanco));
+      const itensCarregados = (await listarItens(id)).map(itemDoBanco);
+      setItens(itensCarregados);
+
+      // Autocura: se o recálculo pós-faturamento tiver sido interrompido
+      // (ex.: queda de conexão), corrige status e totais ao abrir a OS
+      if (registro.status !== 'cancelada') {
+        const totaisEsperados = calcularTotaisOS(itensCarregados);
+        const divergente =
+          registro.status !== derivarStatusOS(itensCarregados) ||
+          registro.totais?.valorTotal !== totaisEsperados.valorTotal ||
+          registro.totais?.qtdItens !== totaisEsperados.qtdItens ||
+          registro.totais?.itensFaturados !== totaisEsperados.itensFaturados;
+        if (divergente) {
+          recalcularOS(id)
+            .then(() => buscarOS(id))
+            .then((atualizado) => atualizado && setOs(atualizado))
+            .catch(() => {});
+        }
+      }
     }
   }
 
@@ -264,17 +285,16 @@ export default function OSForm() {
         setIndiceCancelarItem(indice);
         return;
       }
-      if (ehRetrocesso(item.status, novoStatus)) {
-        registrarLog(
-          'status_retrocedido',
-          'ordens_servico',
-          id,
-          { itemId: item.id || null, sequencia: item.sequencia, de: item.status, para: novoStatus },
-          usuario.uid
-        );
-      }
       setErro('');
-      atualizarItem(indice, (i) => aplicarStatus(i, novoStatus));
+      // Retrocesso é marcado no item e o log só é gravado quando salvar
+      const marcaRetrocesso =
+        ehRetrocesso(item.status, novoStatus) && !item._retrocessoDe
+          ? item.status
+          : item._retrocessoDe;
+      atualizarItem(indice, (i) => ({
+        ...aplicarStatus(i, novoStatus),
+        _retrocessoDe: marcaRetrocesso || null,
+      }));
     },
     alterarItem(indice, campo, valor) {
       atualizarItem(indice, (item) => {
@@ -328,13 +348,16 @@ export default function OSForm() {
     duplicar(indice) {
       setItens((atuais) => {
         const origem = atuais[indice];
+        // Sem `id` (a cópia é um item novo) e sem rastros de faturamento
+        const { id: _id, ...semId } = calcularItem(origem);
         const copia = {
-          ...calcularItem(origem),
-          id: undefined,
+          ...semId,
           sequencia: proximaSequencia(),
           status: 'recebido',
           faturado: false,
           faturamentoId: null,
+          faturamentoNumero: null,
+          dataFaturamento: null,
           notaFiscal: '',
           dataConclusao: '',
           dataEntrega: '',
@@ -542,9 +565,9 @@ export default function OSForm() {
         return;
       }
     }
-    setItens((atuais) =>
-      atuais.filter((_, i) => i !== indice).map((it, i) => ({ ...it, sequencia: i + 1, _alterado: true }))
-    );
+    // Sem renumeração: as sequências dos demais itens não mudam (itens
+    // faturados têm a sequência congelada no faturamento)
+    setItens((atuais) => atuais.filter((_, i) => i !== indice));
   }
 
   // ---------- Totais (calculados em tela) ----------
@@ -599,6 +622,18 @@ export default function OSForm() {
         usuario.uid
       );
       await salvarItens(id, dadosCabecalho, itensAtuais.map(itemParaBanco), usuario.uid);
+      // Log de retrocesso só depois da gravação efetiva (spec 6.1)
+      itensAtuais
+        .filter((i) => i._retrocessoDe)
+        .forEach((i) =>
+          registrarLog(
+            'status_retrocedido',
+            'ordens_servico',
+            id,
+            { itemId: i.id || null, sequencia: i.sequencia, de: i._retrocessoDe, para: i.status },
+            usuario.uid
+          )
+        );
       const registro = await buscarOS(id);
       setOs(registro);
       setItens((await listarItens(id)).map(itemDoBanco));

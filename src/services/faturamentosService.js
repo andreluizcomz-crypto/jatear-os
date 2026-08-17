@@ -169,6 +169,8 @@ export async function cancelarFaturamento(faturamentoId, motivo, uid) {
 export async function registrarNotaFiscal(faturamentoId, notaFiscal, dataNota, uid) {
   const faturamento = await buscarFaturamento(faturamentoId);
   if (!faturamento) throw new Error('faturamento-invalido');
+  // Faturamento cancelado não recebe NF — os itens já pertencem a outro fluxo
+  if (faturamento.status !== 'emitido') throw new Error('faturamento-cancelado');
 
   const lote = writeBatch(db);
   lote.update(doc(db, 'faturamentos', faturamentoId), {
