@@ -113,7 +113,11 @@ export default function Itens() {
   const [erro, setErro] = useState('');
   const [filtros, setFiltros] = useState(() => {
     const preset = parametros.get('filtro');
-    return preset ? presetFiltro(preset) : { ...FILTROS_INICIAIS };
+    const base = preset ? presetFiltro(preset) : { ...FILTROS_INICIAIS };
+    // ?os=OS-2026-0001 restringe a consulta a uma OS específica
+    const numeroOS = parametros.get('os');
+    if (numeroOS) base.numeroOS = numeroOS;
+    return base;
   });
   const [filtroAberto, setFiltroAberto] = useState(false);
   const [mostrarObservacoes, setMostrarObservacoes] = useState(false);

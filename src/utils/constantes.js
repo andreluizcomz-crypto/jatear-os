@@ -45,3 +45,13 @@ export function ehRetrocesso(de, para) {
 export function rotuloStatusOS(status) {
   return STATUS_OS[status]?.rotulo || status || '';
 }
+
+export const STATUS_FATURAMENTO_OS = {
+  nao_faturada: 'Não faturada',
+  parcial: 'Parcialmente faturada',
+  faturada: 'Faturada',
+};
+
+export function rotuloStatusFaturamento(status) {
+  return STATUS_FATURAMENTO_OS[status] || status || '';
+}

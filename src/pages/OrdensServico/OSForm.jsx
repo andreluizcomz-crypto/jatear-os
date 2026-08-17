@@ -28,6 +28,7 @@ import {
   somarDias,
 } from '../../utils/datas';
 import { formatarCnpj, formatarMoeda } from '../../utils/formatadores';
+import { rotuloStatusFaturamento } from '../../utils/constantes';
 import { gerarPdfOS } from '../../services/pdfService';
 import { ehRetrocesso, rotuloStatusOS } from '../../utils/constantes';
 import GradeItens from './GradeItens';
@@ -746,6 +747,32 @@ export default function OSForm() {
 
       {erro && <div className="mensagem-erro">{erro}</div>}
       {aviso && <div className="mensagem-sucesso">{aviso}</div>}
+
+      {os && os.status !== 'cancelada' && (
+        <div className="faixa-faturamento">
+          <span>
+            Faturamento: <strong>{rotuloStatusFaturamento(os.statusFaturamento)}</strong>
+          </span>
+          {podeVerValores && (
+            <span>
+              Faturado: <strong>{formatarMoeda(os.totais?.valorFaturado)}</strong> · A faturar:{' '}
+              <strong>{formatarMoeda(os.totais?.valorAFaturar)}</strong>
+            </span>
+          )}
+          {(ehAdministrador || perfilUsuario?.perfil === 'faturamento') &&
+            itens.some((i) => ['concluido', 'entregue'].includes(i.status) && !i.faturado) && (
+              <button
+                type="button"
+                className="botao-secundario"
+                onClick={() =>
+                  navegar(`/itens?filtro=afaturar&os=${encodeURIComponent(cabecalho.numero)}`)
+                }
+              >
+                Faturar itens desta OS
+              </button>
+            )}
+        </div>
+      )}
 
       <div className="cartao">
         <fieldset disabled={!podeEditar || salvando} style={{ border: 'none' }}>
