@@ -11,6 +11,12 @@ export function formatarCnpj(valor) {
   return resultado;
 }
 
+// Máscara progressiva 00000-000
+export function formatarCep(valor) {
+  const d = somenteDigitos(valor).slice(0, 8);
+  return d.length > 5 ? d.slice(0, 5) + '-' + d.slice(5) : d;
+}
+
 export function formatarMoeda(valor) {
   return (Number(valor) || 0).toLocaleString('pt-BR', {
     style: 'currency',

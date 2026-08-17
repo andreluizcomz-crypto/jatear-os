@@ -7,7 +7,8 @@ import {
   criarCliente,
 } from '../../services/clientesService';
 import { listarServicos } from '../../services/servicosService';
-import { formatarCnpj, rotuloUnidade, UNIDADES } from '../../utils/formatadores';
+import { buscarCep } from '../../services/cepService';
+import { formatarCep, formatarCnpj, rotuloUnidade, UNIDADES } from '../../utils/formatadores';
 import { somenteDigitos, validarCnpj } from '../../utils/validadores';
 
 const clienteVazio = {
@@ -37,6 +38,7 @@ export default function ClienteForm() {
   const [carregando, setCarregando] = useState(!ehNovo);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState('');
+  const [situacaoCep, setSituacaoCep] = useState(''); // '', 'buscando', 'nao-encontrado', 'falha'
 
   useEffect(() => {
     listarServicos().then(setServicos).catch(() => {});
@@ -60,6 +62,31 @@ export default function ClienteForm() {
 
   function alterarEndereco(campo, valor) {
     setCliente((atual) => ({ ...atual, endereco: { ...atual.endereco, [campo]: valor } }));
+  }
+
+  // Ao completar o CEP, preenche logradouro, bairro, cidade e UF (ViaCEP)
+  async function aoDigitarCep(valor) {
+    const cep = formatarCep(valor);
+    alterarEndereco('cep', cep);
+    if (cep.length !== 9) {
+      setSituacaoCep('');
+      return;
+    }
+    setSituacaoCep('buscando');
+    try {
+      const endereco = await buscarCep(cep);
+      if (!endereco) {
+        setSituacaoCep('nao-encontrado');
+        return;
+      }
+      setCliente((atual) => ({
+        ...atual,
+        endereco: { ...atual.endereco, cep, ...endereco },
+      }));
+      setSituacaoCep('');
+    } catch (_) {
+      setSituacaoCep('falha');
+    }
   }
 
   // ---------- Subclientes ----------
@@ -268,6 +295,29 @@ export default function ClienteForm() {
                 />
               </div>
 
+              <div className="campo">
+                <label htmlFor="cep">CEP</label>
+                <input
+                  id="cep"
+                  inputMode="numeric"
+                  placeholder="00000-000"
+                  value={cliente.endereco.cep}
+                  onChange={(e) => aoDigitarCep(e.target.value)}
+                />
+                {situacaoCep === 'buscando' && (
+                  <span className="dica-campo">Buscando endereço...</span>
+                )}
+                {situacaoCep === 'nao-encontrado' && (
+                  <span className="dica-campo dica-erro">
+                    CEP não encontrado — preencha o endereço manualmente.
+                  </span>
+                )}
+                {situacaoCep === 'falha' && (
+                  <span className="dica-campo dica-erro">
+                    Consulta de CEP indisponível — preencha o endereço manualmente.
+                  </span>
+                )}
+              </div>
               <div className="campo campo-largo">
                 <label htmlFor="logradouro">Endereço</label>
                 <input
@@ -308,15 +358,6 @@ export default function ClienteForm() {
                   maxLength={2}
                   value={cliente.endereco.uf}
                   onChange={(e) => alterarEndereco('uf', e.target.value.toUpperCase())}
-                />
-              </div>
-              <div className="campo">
-                <label htmlFor="cep">CEP</label>
-                <input
-                  id="cep"
-                  inputMode="numeric"
-                  value={cliente.endereco.cep}
-                  onChange={(e) => alterarEndereco('cep', e.target.value)}
                 />
               </div>
               <div className="campo campo-caixa">

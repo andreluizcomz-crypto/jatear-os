@@ -223,6 +223,17 @@ a {
   padding: 10px 16px;
 }
 
+.dica-campo {
+  display: block;
+  font-size: 12px;
+  color: #555555;
+  margin-top: 4px;
+}
+
+.dica-erro {
+  color: var(--cor-erro);
+}
+
 .mensagem-erro {
   background: #FDECEA;
   color: var(--cor-erro);
