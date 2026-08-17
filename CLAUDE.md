@@ -92,7 +92,7 @@ Termos padronizados: "Ordem de Serviço" (não "pedido"), "Colaborador" (não "f
 
 Idêntica à do Jatear LMS, para reaproveitamento de conhecimento e componentes.
 
-- **Frontend:** React.js (JavaScript), React Router, Context API para autenticação/estado global
+- **Frontend:** React.js (JavaScript) com **Vite** (o Create React App foi descontinuado), React Router, Context API para autenticação/estado global
 - **Backend / BaaS:** Firebase
   - Authentication (e-mail + senha)
   - Cloud Firestore (banco principal)
@@ -101,8 +101,10 @@ Idêntica à do Jatear LMS, para reaproveitamento de conhecimento e componentes.
   - Cloud Functions (Node 20)
 - **Região Firebase:** `southamerica-east1` (São Paulo) — **sempre**
 - **Conta Firebase:** tijatear@gmail.com
-- **Projeto Firebase sugerido:** `jatear-os` → `jatear-os.web.app`
-- **Domínio customizado previsto:** `os.jatear.com` (CNAME no **Wix**, que gerencia o DNS de jatear.com)
+- **Projeto Firebase (criado):** `jatear-os` → `jatear-os.web.app` — plano **Blaze**, região `southamerica-east1` (Firestore e Storage)
+- **Domínio customizado:** `os.jatear.com` — registrado no Hosting e autorizado no Auth; CNAME `os → jatear-os.web.app` no **Wix** (que gerencia o DNS de jatear.com)
+- **Servidor de desenvolvimento:** `npm start` → **porta 3210** (`strictPort`). Não usar as portas 3000/3001 — têm service workers antigos do LMS e do Tintas registrados no navegador
+- **Usuário administrador inicial:** `andre.paiva@jatear.com` (não usar `admin@jatear.com`)
 - **E-mail transacional:** **Brevo** via Nodemailer (SMTP `smtp-relay.brevo.com`, porta 587) — mesma conta do LMS
 - **Geração de PDF:** biblioteca client-side (jsPDF + autotable) ou Cloud Function, conforme o caso
 - **Versionamento:** **GitHub — obrigatório desde o primeiro commit**
@@ -182,6 +184,12 @@ André Luiz — gestor da Jatear. **Dirige o desenvolvimento, não escreve códi
 ---
 
 ## 9. MODELO DE DADOS (Firestore — estrutura de referência)
+
+> **SUBSTITUÍDO:** o modelo implementado é o da **especificação funcional**
+> (`docs/ESPECIFICACAO-OS.md`, seção 4) — job shop por peças, com subcoleção
+> `ordens_servico/{osId}/itens`, coleções `faturamentos` e `contadores`, e
+> perfis reduzidos a 4 (administrador, producao, faturamento, consulta).
+> O bloco abaixo permanece apenas como referência histórica.
 
 Coleções em **português, minúsculas, plural, com underline**.
 
@@ -298,6 +306,14 @@ Padrão de credenciais alinhado ao LMS: `admin@jatear.com` como administrador in
 ---
 
 ## 13. FASES DE ENTREGA
+
+> **STATUS (agosto/2026):** as fases 0 a 7 da especificação funcional foram
+> entregues e publicadas em `jatear-os.web.app` — fundação, cadastros, OS com
+> grade de itens, status e fechamento parcial, consulta com filtros e CSV,
+> faturamento transacional com NF e cancelamento, recursos de campo mobile
+> (fotos, offline, PWA), PDFs, dashboard, logs e administração de usuários.
+> Pendências: propagação do CNAME `os.jatear.com` (com o prestador) e itens
+> de V2 (seção 17 da especificação — Brevo, inspeção, portal do cliente).
 
 | Fase | Escopo |
 | --- | --- |
