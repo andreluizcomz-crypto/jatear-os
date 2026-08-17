@@ -22,6 +22,7 @@ export default function GradeItens({
   totais,
   podeEditar,
   ehAdministrador,
+  podeVerValores,
   selecionados,
   acoes,
 }) {
@@ -79,8 +80,8 @@ export default function GradeItens({
               <th>Área un. (m²)</th>
               <th>Serviço</th>
               <th>Qtd cobrada</th>
-              <th>Preço un.</th>
-              <th>Valor</th>
+              {podeVerValores && <th>Preço un.</th>}
+              {podeVerValores && <th>Valor</th>}
               <th>Recebimento</th>
               <th>Prev. entrega</th>
               <th className="col-observacoes">Observações</th>
@@ -180,18 +181,22 @@ export default function GradeItens({
                       disabled={bloqueada || !servicoPrincipal}
                     />
                   </td>
-                  <td>
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      step="0.01"
-                      min="0"
-                      value={servicoPrincipal?.precoUnitario ?? ''}
-                      onChange={(e) => acoes.alterarPrecoUnitario(indice, e.target.value)}
-                      disabled={bloqueada || !servicoPrincipal}
-                    />
-                  </td>
-                  <td className="celula-valor">{formatarMoeda(item.valorTotalItem)}</td>
+                  {podeVerValores && (
+                    <td>
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        step="0.01"
+                        min="0"
+                        value={servicoPrincipal?.precoUnitario ?? ''}
+                        onChange={(e) => acoes.alterarPrecoUnitario(indice, e.target.value)}
+                        disabled={bloqueada || !servicoPrincipal}
+                      />
+                    </td>
+                  )}
+                  {podeVerValores && (
+                    <td className="celula-valor">{formatarMoeda(item.valorTotalItem)}</td>
+                  )}
                   <td>
                     <input
                       type="date"
@@ -280,8 +285,10 @@ export default function GradeItens({
                 <td>{totais.qtdPecas}</td>
                 <td>{totais.pesoTotalKg}</td>
                 <td>{totais.areaTotalM2}</td>
-                <td colSpan={3} />
-                <td className="celula-valor">{formatarMoeda(totais.valorTotal)}</td>
+                <td colSpan={podeVerValores ? 3 : 2} />
+                {podeVerValores && (
+                  <td className="celula-valor">{formatarMoeda(totais.valorTotal)}</td>
+                )}
                 <td colSpan={5} />
               </tr>
             </tfoot>
@@ -313,7 +320,7 @@ export default function GradeItens({
               Qtd: {item.quantidade}
               {(item.servicos || []).length > 0 &&
                 ` · ${item.servicos.map((s) => s.servicoCodigo).join(', ')}`}
-              {` · ${formatarMoeda(item.valorTotalItem)}`}
+              {podeVerValores && ` · ${formatarMoeda(item.valorTotalItem)}`}
               {item.dataPrevistaEntrega && ` · Prev.: ${inputParaDataCurta(item.dataPrevistaEntrega)}`}
             </div>
           </button>

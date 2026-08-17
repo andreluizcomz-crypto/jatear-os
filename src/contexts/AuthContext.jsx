@@ -40,10 +40,20 @@ export function AuthProvider({ children }) {
   }
 
   const ehAdministrador = perfilUsuario?.perfil === 'administrador';
+  // Produção e Consulta não veem valores financeiros (especificação seção 11)
+  const podeVerValores = ['administrador', 'faturamento'].includes(perfilUsuario?.perfil);
 
   return (
     <AuthContext.Provider
-      value={{ usuario, perfilUsuario, ehAdministrador, carregando, entrar, sair }}
+      value={{
+        usuario,
+        perfilUsuario,
+        ehAdministrador,
+        podeVerValores,
+        carregando,
+        entrar,
+        sair,
+      }}
     >
       {children}
     </AuthContext.Provider>

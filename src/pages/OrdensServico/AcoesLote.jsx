@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { STATUS_ITEM } from '../../utils/constantes';
 
 // Barra de ações em lote sobre os itens selecionados na grade
-export default function AcoesLote({ quantidade, servicos, onAplicar, onLimpar }) {
+export default function AcoesLote({ quantidade, servicos, podeVerValores, onAplicar, onLimpar }) {
   const [status, setStatus] = useState('em_execucao');
   const [dataConclusao, setDataConclusao] = useState('');
   const [dataPrevista, setDataPrevista] = useState('');
@@ -57,20 +57,22 @@ export default function AcoesLote({ quantidade, servicos, onAplicar, onLimpar })
         </button>
       </div>
 
-      <div className="grupo-lote">
-        <input
-          type="number"
-          inputMode="decimal"
-          step="0.01"
-          min="0"
-          placeholder="Preço"
-          value={preco}
-          onChange={(e) => setPreco(e.target.value)}
-        />
-        <button type="button" onClick={() => preco !== '' && onAplicar('preco', preco)}>
-          Aplicar preço
-        </button>
-      </div>
+      {podeVerValores && (
+        <div className="grupo-lote">
+          <input
+            type="number"
+            inputMode="decimal"
+            step="0.01"
+            min="0"
+            placeholder="Preço"
+            value={preco}
+            onChange={(e) => setPreco(e.target.value)}
+          />
+          <button type="button" onClick={() => preco !== '' && onAplicar('preco', preco)}>
+            Aplicar preço
+          </button>
+        </div>
+      )}
 
       <div className="grupo-lote">
         <input

@@ -68,7 +68,7 @@ export default function OSForm() {
   const { id } = useParams();
   const ehNova = !id;
   const navegar = useNavigate();
-  const { usuario, ehAdministrador, perfilUsuario } = useAuth();
+  const { usuario, ehAdministrador, podeVerValores, perfilUsuario } = useAuth();
   const podeEditar = ehAdministrador || perfilUsuario?.perfil === 'producao';
 
   const [os, setOs] = useState(null); // documento salvo (para OS existente)
@@ -674,7 +674,8 @@ export default function OSForm() {
                   clienteSelecionado
                     ? { cnpj: formatarCnpj(clienteSelecionado.cnpj) }
                     : null,
-                  itens
+                  itens,
+                  { ocultarValores: !podeVerValores }
                 )
               }
             >
@@ -819,6 +820,7 @@ export default function OSForm() {
               <AcoesLote
                 quantidade={selecionados.size}
                 servicos={servicos}
+                podeVerValores={podeVerValores}
                 onAplicar={aplicarLote}
                 onLimpar={() => setSelecionados(new Set())}
               />
@@ -830,6 +832,7 @@ export default function OSForm() {
             totais={totais}
             podeEditar={podeEditar && os?.status !== 'cancelada'}
             ehAdministrador={ehAdministrador}
+            podeVerValores={podeVerValores}
             selecionados={selecionados}
             acoes={acoesGrade}
           />
@@ -847,12 +850,16 @@ export default function OSForm() {
           <span>
             Área: <strong>{totais.areaTotalM2} m²</strong>
           </span>
-          <span>
-            Total: <strong>{formatarMoeda(totais.valorTotal)}</strong>
-          </span>
-          <span className="so-desktop-inline">
-            A faturar: <strong>{formatarMoeda(totais.valorAFaturar)}</strong>
-          </span>
+          {podeVerValores && (
+            <span>
+              Total: <strong>{formatarMoeda(totais.valorTotal)}</strong>
+            </span>
+          )}
+          {podeVerValores && (
+            <span className="so-desktop-inline">
+              A faturar: <strong>{formatarMoeda(totais.valorAFaturar)}</strong>
+            </span>
+          )}
         </div>
         {podeEditar && (
           <button
@@ -873,6 +880,7 @@ export default function OSForm() {
           servicos={servicos}
           sugerirPreco={sugerirPreco}
           ehAdministrador={ehAdministrador}
+          podeVerValores={podeVerValores}
           onFechar={() => setIndiceEditor(null)}
           onSalvar={(itemAtualizado) => {
             setItens((atuais) =>

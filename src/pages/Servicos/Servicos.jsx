@@ -18,7 +18,7 @@ const servicoVazio = {
 };
 
 export default function Servicos() {
-  const { ehAdministrador } = useAuth();
+  const { ehAdministrador, podeVerValores } = useAuth();
   const [servicos, setServicos] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
@@ -111,8 +111,8 @@ export default function Servicos() {
               </span>
             </div>
             <div className="linha-detalhe">
-              Unidade: {rotuloUnidade(servico.unidadePadrao)} · Preço padrão:{' '}
-              {formatarMoeda(servico.precoPadrao)}
+              Unidade: {rotuloUnidade(servico.unidadePadrao)}
+              {podeVerValores && ` · Preço padrão: ${formatarMoeda(servico.precoPadrao)}`}
               {servico.demaos > 0 && ` · ${servico.demaos} demão${servico.demaos > 1 ? 's' : ''}`}
               {servico.grauLimpezaPadrao && ` · Grau: ${servico.grauLimpezaPadrao}`}
             </div>

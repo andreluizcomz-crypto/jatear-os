@@ -112,7 +112,7 @@ function MultiSelecao({ rotulo, opcoes, valores, onAlterar }) {
 export default function Itens() {
   const navegar = useNavigate();
   const [parametros] = useSearchParams();
-  const { ehAdministrador, perfilUsuario } = useAuth();
+  const { ehAdministrador, podeVerValores, perfilUsuario } = useAuth();
   const podeFaturar = ehAdministrador || perfilUsuario?.perfil === 'faturamento';
 
   const [itens, setItens] = useState([]);
@@ -285,13 +285,15 @@ export default function Itens() {
 
   // ---------- Exportação ----------
   function exportar() {
+    const cabecalhos = [
+      'OS', 'Seq', 'Descrição', 'Cód. peça', 'Cliente', 'Subcliente', 'Serviços', 'Qtd',
+      'Peso (kg)', 'Área (m²)',
+      ...(podeVerValores ? ['Valor'] : []),
+      'Recebimento', 'Conclusão', 'Observações', 'Status', 'Faturamento', 'NF',
+    ];
     exportarCsv(
       `itens-${hojeInput()}.csv`,
-      [
-        'OS', 'Seq', 'Descrição', 'Cód. peça', 'Cliente', 'Subcliente', 'Serviços', 'Qtd',
-        'Peso (kg)', 'Área (m²)', 'Valor', 'Recebimento', 'Conclusão', 'Observações',
-        'Status', 'Faturamento', 'NF',
-      ],
+      cabecalhos,
       ordenados.map((item) => [
         item.osNumero, item.sequencia, item.descricao, item.codigoPeca || '',
         item.clienteNome, item.subclienteNome || '',
@@ -299,7 +301,7 @@ export default function Itens() {
         item.quantidade,
         String(item.pesoTotalKg ?? '').replace('.', ','),
         String(item.areaTotalM2 ?? '').replace('.', ','),
-        String(item.valorTotalItem ?? '').replace('.', ','),
+        ...(podeVerValores ? [String(item.valorTotalItem ?? '').replace('.', ',')] : []),
         formatarData(item.dataRecebimento), formatarData(item.dataConclusao),
         item.observacoes || '', rotuloStatusItem(item.status),
         item.faturamentoNumero || '', item.notaFiscal || '',
@@ -415,24 +417,28 @@ export default function Itens() {
             onChange={(e) => alterarFiltro('notaFiscal', e.target.value)}
           />
         </div>
-        <div className="campo">
-          <label>Valor mínimo (R$)</label>
-          <input
-            type="number"
-            inputMode="decimal"
-            value={filtros.valorMin}
-            onChange={(e) => alterarFiltro('valorMin', e.target.value)}
-          />
-        </div>
-        <div className="campo">
-          <label>Valor máximo (R$)</label>
-          <input
-            type="number"
-            inputMode="decimal"
-            value={filtros.valorMax}
-            onChange={(e) => alterarFiltro('valorMax', e.target.value)}
-          />
-        </div>
+        {podeVerValores && (
+          <div className="campo">
+            <label>Valor mínimo (R$)</label>
+            <input
+              type="number"
+              inputMode="decimal"
+              value={filtros.valorMin}
+              onChange={(e) => alterarFiltro('valorMin', e.target.value)}
+            />
+          </div>
+        )}
+        {podeVerValores && (
+          <div className="campo">
+            <label>Valor máximo (R$)</label>
+            <input
+              type="number"
+              inputMode="decimal"
+              value={filtros.valorMax}
+              onChange={(e) => alterarFiltro('valorMax', e.target.value)}
+            />
+          </div>
+        )}
         <div className="campo campo-caixa">
           <label>
             <input
@@ -484,6 +490,7 @@ export default function Itens() {
           <button type="button" className="botao-secundario" onClick={exportar}>
             Exportar CSV
           </button>
+          {podeVerValores && (
           <button
             type="button"
             className="botao-secundario"
@@ -501,6 +508,7 @@ export default function Itens() {
           >
             Exportar PDF
           </button>
+          )}
           <button
             type="button"
             className="botao-secundario"
@@ -561,7 +569,7 @@ export default function Itens() {
         <span>Qtd: <strong>{totais.qtd}</strong></span>
         <span>Peso: <strong>{totais.peso} kg</strong></span>
         <span>Área: <strong>{totais.area} m²</strong></span>
-        <span>Valor: <strong>{formatarMoeda(totais.valor)}</strong></span>
+        {podeVerValores && <span>Valor: <strong>{formatarMoeda(totais.valor)}</strong></span>}
       </div>
 
       {/* ---------- Desktop: tabela ---------- */}
@@ -586,7 +594,7 @@ export default function Itens() {
               <th onClick={() => ordenarPor('qtd')}>Qtd</th>
               <th onClick={() => ordenarPor('peso')}>Peso</th>
               <th onClick={() => ordenarPor('area')}>m²</th>
-              <th onClick={() => ordenarPor('valor')}>Valor</th>
+              {podeVerValores && <th onClick={() => ordenarPor('valor')}>Valor</th>}
               <th onClick={() => ordenarPor('recebimento')}>Recebimento</th>
               <th onClick={() => ordenarPor('conclusao')}>Conclusão</th>
               {mostrarObservacoes && <th>Observações</th>}
@@ -630,7 +638,9 @@ export default function Itens() {
                 <td>{item.quantidade}</td>
                 <td>{item.pesoTotalKg || ''}</td>
                 <td>{item.areaTotalM2 || ''}</td>
-                <td className="celula-valor">{formatarMoeda(item.valorTotalItem)}</td>
+                {podeVerValores && (
+                  <td className="celula-valor">{formatarMoeda(item.valorTotalItem)}</td>
+                )}
                 <td>{formatarData(item.dataRecebimento)}</td>
                 <td>{formatarData(item.dataConclusao)}</td>
                 {mostrarObservacoes && (
@@ -688,7 +698,7 @@ export default function Itens() {
             <div className="linha-detalhe" onClick={() => navegar(`/ordens/${item.osId}`)}>
               {item.osNumero} · {item.clienteNome}
               {item.subclienteNome && ` · ${item.subclienteNome}`}
-              {` · ${formatarMoeda(item.valorTotalItem)}`}
+              {podeVerValores && ` · ${formatarMoeda(item.valorTotalItem)}`}
               {itemAtrasado(item) && ' · ATRASADO'}
             </div>
           </div>

@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import { listarFaturamentos } from '../../services/faturamentosService';
 import { formatarData, formatarMoeda } from '../../utils/formatadores';
 
 export default function Faturamentos() {
   const navegar = useNavigate();
+  const { podeVerValores } = useAuth();
   const [faturamentos, setFaturamentos] = useState([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
@@ -46,8 +48,11 @@ export default function Faturamentos() {
               </span>
             </div>
             <div className="linha-detalhe">
-              {formatarData(fat.geradoEm)} · {fat.qtdItens} item(ns) ·{' '}
-              {formatarMoeda(fat.valorTotal)}
+              {formatarData(fat.geradoEm)}
+              {fat.periodoInicio &&
+                ` · Período: ${formatarData(fat.periodoInicio)} a ${formatarData(fat.periodoFim)}`}
+              {` · ${fat.qtdItens} item(ns)`}
+              {podeVerValores && ` · ${formatarMoeda(fat.valorTotal)}`}
               {fat.notaFiscal && ` · NF ${fat.notaFiscal}`}
             </div>
           </button>

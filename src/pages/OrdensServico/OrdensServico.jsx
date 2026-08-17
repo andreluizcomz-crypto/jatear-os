@@ -7,7 +7,7 @@ import { STATUS_OS, rotuloStatusOS } from '../../utils/constantes';
 
 export default function OrdensServico() {
   const navegar = useNavigate();
-  const { ehAdministrador, perfilUsuario } = useAuth();
+  const { ehAdministrador, podeVerValores, perfilUsuario } = useAuth();
   const podeEditar = ehAdministrador || perfilUsuario?.perfil === 'producao';
   const [ordens, setOrdens] = useState([]);
   const [busca, setBusca] = useState('');
@@ -85,7 +85,8 @@ export default function OrdensServico() {
             <div className="linha-detalhe">
               Abertura: {formatarData(os.dataAbertura)}
               {os.subclienteNome && ` · Subcliente: ${os.subclienteNome}`}
-              {` · ${os.totais?.qtdItens || 0} item(ns) · ${formatarMoeda(os.totais?.valorTotal)}`}
+              {` · ${os.totais?.qtdItens || 0} item(ns)`}
+              {podeVerValores && ` · ${formatarMoeda(os.totais?.valorTotal)}`}
             </div>
           </button>
         ))}

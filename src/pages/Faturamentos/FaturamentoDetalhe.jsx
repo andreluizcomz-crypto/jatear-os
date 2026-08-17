@@ -14,7 +14,7 @@ import Justificativa from '../../components/Justificativa';
 export default function FaturamentoDetalhe() {
   const { id } = useParams();
   const navegar = useNavigate();
-  const { usuario, ehAdministrador, perfilUsuario } = useAuth();
+  const { usuario, ehAdministrador, podeVerValores, perfilUsuario } = useAuth();
   const podeFaturar = ehAdministrador || perfilUsuario?.perfil === 'faturamento';
 
   const [faturamento, setFaturamento] = useState(null);
@@ -94,13 +94,15 @@ export default function FaturamentoDetalhe() {
           <button type="button" className="botao-secundario" onClick={() => navegar('/faturamentos')}>
             Voltar
           </button>
-          <button
-            type="button"
-            className="botao-secundario"
-            onClick={() => gerarPdfFaturamento(faturamento)}
-          >
-            PDF
-          </button>
+          {podeVerValores && (
+            <button
+              type="button"
+              className="botao-secundario"
+              onClick={() => gerarPdfFaturamento(faturamento)}
+            >
+              PDF
+            </button>
+          )}
           {podeFaturar && emitido && (
             <>
               <button type="button" className="botao-secundario" onClick={() => setModalNF(true)}>
@@ -160,7 +162,7 @@ export default function FaturamentoDetalhe() {
               <th>Peso (kg)</th>
               <th>m²</th>
               <th>Serviços</th>
-              <th>Valor</th>
+              {podeVerValores && <th>Valor</th>}
             </tr>
           </thead>
           <tbody>
@@ -175,15 +177,18 @@ export default function FaturamentoDetalhe() {
                 <td>{item.areaTotalM2 || ''}</td>
                 <td style={{ whiteSpace: 'normal' }}>
                   {(item.servicos || [])
-                    .map(
-                      (s) =>
-                        `${s.codigo} ${s.quantidadeCobrada} ${rotuloUnidade(s.unidade)} × ${formatarMoeda(
-                          s.precoUnitario
-                        )}`
+                    .map((s) =>
+                      podeVerValores
+                        ? `${s.codigo} ${s.quantidadeCobrada} ${rotuloUnidade(s.unidade)} × ${formatarMoeda(
+                            s.precoUnitario
+                          )}`
+                        : `${s.codigo} ${s.quantidadeCobrada} ${rotuloUnidade(s.unidade)}`
                     )
                     .join('; ')}
                 </td>
-                <td className="celula-valor">{formatarMoeda(item.valorTotalItem)}</td>
+                {podeVerValores && (
+                  <td className="celula-valor">{formatarMoeda(item.valorTotalItem)}</td>
+                )}
               </tr>
             ))}
           </tbody>
@@ -194,7 +199,9 @@ export default function FaturamentoDetalhe() {
               <td>{faturamento.pesoTotalKg}</td>
               <td>{faturamento.areaTotalM2}</td>
               <td />
-              <td className="celula-valor">{formatarMoeda(faturamento.valorTotal)}</td>
+              {podeVerValores && (
+                <td className="celula-valor">{formatarMoeda(faturamento.valorTotal)}</td>
+              )}
             </tr>
           </tfoot>
         </table>

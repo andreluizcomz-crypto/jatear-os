@@ -16,6 +16,7 @@ export default function ItemEditor({
   servicos,
   sugerirPreco,
   ehAdministrador,
+  podeVerValores,
   onSalvar,
   onFechar,
 }) {
@@ -314,21 +315,25 @@ export default function ItemEditor({
                     onChange={(e) => alterarServico(indice, 'quantidadeCobrada', e.target.value)}
                   />
                 </div>
-                <div className="campo">
-                  <label>Preço unitário (R$)</label>
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    step="0.01"
-                    min="0"
-                    value={servico.precoUnitario}
-                    onChange={(e) => alterarServico(indice, 'precoUnitario', e.target.value)}
-                  />
-                </div>
-                <div className="campo">
-                  <label>Valor</label>
-                  <input value={formatarMoeda(servico.valor)} disabled />
-                </div>
+                {podeVerValores && (
+                  <div className="campo">
+                    <label>Preço unitário (R$)</label>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.01"
+                      min="0"
+                      value={servico.precoUnitario}
+                      onChange={(e) => alterarServico(indice, 'precoUnitario', e.target.value)}
+                    />
+                  </div>
+                )}
+                {podeVerValores && (
+                  <div className="campo">
+                    <label>Valor</label>
+                    <input value={formatarMoeda(servico.valor)} disabled />
+                  </div>
+                )}
                 <div className="campo">
                   <label>Esquema de pintura</label>
                   <input
@@ -436,7 +441,7 @@ export default function ItemEditor({
         )}
 
         <div className="rodape-item-editor">
-          <strong>Total do item: {formatarMoeda(dados.valorTotalItem)}</strong>
+          <strong>{podeVerValores ? `Total do item: ${formatarMoeda(dados.valorTotalItem)}` : ''}</strong>
           <div className="acoes-modal">
             <button type="button" className="botao-secundario" onClick={fecharSemAplicar}>
               Descartar

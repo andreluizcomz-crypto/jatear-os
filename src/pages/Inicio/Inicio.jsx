@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import { listarTodosItens } from '../../services/consultaService';
 import { listarOS } from '../../services/osService';
 import { listarFaturamentos } from '../../services/faturamentosService';
@@ -19,6 +20,7 @@ function Cartao({ titulo, valor, detalhe, aoClicar }) {
 
 export default function Inicio() {
   const navegar = useNavigate();
+  const { podeVerValores } = useAuth();
   const [itens, setItens] = useState([]);
   const [ordens, setOrdens] = useState([]);
   const [faturamentos, setFaturamentos] = useState([]);
@@ -84,7 +86,7 @@ export default function Inicio() {
         <Cartao
           titulo="Concluídos a faturar"
           valor={indicadores.aFaturarQtd}
-          detalhe={formatarMoeda(indicadores.aFaturarValor)}
+          detalhe={podeVerValores ? formatarMoeda(indicadores.aFaturarValor) : undefined}
           aoClicar={() => navegar('/itens?filtro=afaturar')}
         />
         <Cartao
@@ -103,11 +105,13 @@ export default function Inicio() {
           detalhe={`${indicadores.pesoMes} kg`}
           aoClicar={() => navegar('/itens?filtro=mes')}
         />
-        <Cartao
-          titulo="Faturado no mês"
-          valor={formatarMoeda(indicadores.faturadoMes)}
-          aoClicar={() => navegar('/itens?filtro=faturadomes')}
-        />
+        {podeVerValores && (
+          <Cartao
+            titulo="Faturado no mês"
+            valor={formatarMoeda(indicadores.faturadoMes)}
+            aoClicar={() => navegar('/itens?filtro=faturadomes')}
+          />
+        )}
       </div>
     </div>
   );

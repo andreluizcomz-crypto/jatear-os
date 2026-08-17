@@ -20,8 +20,15 @@ function servicosTexto(item) {
     .join('\n');
 }
 
+function servicosTextoSemPreco(item) {
+  return (item.servicos || [])
+    .map((s) => `${s.servicoCodigo || s.codigo}: ${s.quantidadeCobrada} ${rotuloUnidade(s.unidade)}`)
+    .join('\n');
+}
+
 // ---------- OS impressa ----------
-export function gerarPdfOS(os, cliente, itens) {
+export function gerarPdfOS(os, cliente, itens, opcoes = {}) {
+  const comValores = !opcoes.ocultarValores;
   return montarPdf(`${os.numero}`, 'Ordem de Serviço', (doc, tabela, y) => {
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
@@ -37,34 +44,41 @@ export function gerarPdfOS(os, cliente, itens) {
     ].filter(Boolean);
     linhas.forEach((linha, i) => doc.text(linha, 14, y + i * 5));
 
+    const cabecalhos = [
+      'Seq', 'Descrição', 'Cód. peça', 'Qtd', 'Peso (kg)', 'm²', 'Serviços', 'Observações', 'Status',
+    ];
+    if (comValores) cabecalhos.push('Valor');
+    const rodape = [
+      '', 'Totais', '',
+      String(itens.reduce((t, i) => t + (Number(i.quantidade) || 0), 0)),
+      String(Number(itens.reduce((t, i) => t + (Number(i.pesoTotalKg) || 0), 0).toFixed(2))),
+      String(Number(itens.reduce((t, i) => t + (Number(i.areaTotalM2) || 0), 0).toFixed(2))),
+      '', '', '',
+    ];
+    if (comValores) {
+      rodape.push(moedaPdf(itens.reduce((t, i) => t + (Number(i.valorTotalItem) || 0), 0)));
+    }
     tabela({
       startY: y + linhas.length * 5 + 3,
-      head: [
-        ['Seq', 'Descrição', 'Cód. peça', 'Qtd', 'Peso (kg)', 'm²', 'Serviços', 'Observações', 'Status', 'Valor'],
-      ],
-      body: itens.map((item) => [
-        item.sequencia,
-        item.descricao,
-        item.codigoPeca || '',
-        item.quantidade,
-        item.pesoTotalKg || '',
-        item.areaTotalM2 || '',
-        servicosTexto(item),
-        item.observacoes || '',
-        rotuloStatusItem(item.status),
-        moedaPdf(item.valorTotalItem),
-      ]),
+      head: [cabecalhos],
+      body: itens.map((item) => {
+        const linha = [
+          item.sequencia,
+          item.descricao,
+          item.codigoPeca || '',
+          item.quantidade,
+          item.pesoTotalKg || '',
+          item.areaTotalM2 || '',
+          comValores ? servicosTexto(item) : servicosTextoSemPreco(item),
+          item.observacoes || '',
+          rotuloStatusItem(item.status),
+        ];
+        if (comValores) linha.push(moedaPdf(item.valorTotalItem));
+        return linha;
+      }),
       columnStyles: { 1: { cellWidth: 32 }, 6: { cellWidth: 34 }, 7: { cellWidth: 30 }, 9: { halign: 'right' } },
-      foot: [[
-        '', 'Totais', '',
-        String(itens.reduce((t, i) => t + (Number(i.quantidade) || 0), 0)),
-        String(Number(itens.reduce((t, i) => t + (Number(i.pesoTotalKg) || 0), 0).toFixed(2))),
-        String(Number(itens.reduce((t, i) => t + (Number(i.areaTotalM2) || 0), 0).toFixed(2))),
-        '', '', '',
-        moedaPdf(itens.reduce((t, i) => t + (Number(i.valorTotalItem) || 0), 0)),
-      ]],
+      foot: [rodape],
       footStyles: { fillColor: [245, 245, 245], textColor: 0, fontStyle: 'bold' },
-      didDrawPage: () => {},
     });
 
     const fimTabela = doc.lastAutoTable.finalY;
