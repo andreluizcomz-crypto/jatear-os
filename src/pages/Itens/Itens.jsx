@@ -145,6 +145,26 @@ export default function Itens() {
     setSelecionadas(new Set());
   }
 
+  // Quantos filtros diferem do padrão (mostrado no botão "Filtros")
+  const qtdFiltrosAtivos = useMemo(() => {
+    let total = 0;
+    if (filtros.clientes.length) total++;
+    if (filtros.subclientes.length) total++;
+    if (filtros.servicos.length) total++;
+    if (filtros.status.length) total++;
+    if (filtros.situacao !== 'todos') total++;
+    if (filtros.numeroOS.trim()) total++;
+    if (filtros.numeroOSAte.trim()) total++;
+    if (filtros.texto.trim()) total++;
+    if (filtros.periodoInicio || filtros.periodoFim) total++;
+    if (filtros.numeroFaturamento.trim()) total++;
+    if (filtros.notaFiscal.trim()) total++;
+    if (filtros.somenteAtrasados) total++;
+    if (filtros.somenteSemPreco) total++;
+    if (filtros.valorMin !== '' || filtros.valorMax !== '') total++;
+    return total;
+  }, [filtros]);
+
   const subclientesDisponiveis = useMemo(() => {
     const base =
       filtros.clientes.length > 0
@@ -484,7 +504,7 @@ export default function Itens() {
         </button>
         <button
           type="button"
-          className="botao-primario botao-acao so-celular"
+          className="botao-primario botao-acao"
           onClick={() => setFiltroAberto(false)}
         >
           Ver resultados
@@ -549,12 +569,8 @@ export default function Itens() {
         <button type="button" onClick={() => aplicarPreset('atrasados')}>Atrasados</button>
         <button type="button" onClick={() => aplicarPreset('faturadomes')}>Faturado no mês</button>
         <button type="button" onClick={() => aplicarPreset('sempreco')}>Sem preço</button>
-        <button
-          type="button"
-          className="so-celular-inline"
-          onClick={() => setFiltroAberto(true)}
-        >
-          Filtros...
+        <button type="button" onClick={() => setFiltroAberto((v) => !v)}>
+          {filtroAberto ? 'Ocultar filtros' : `Filtros${qtdFiltrosAtivos ? ` (${qtdFiltrosAtivos})` : ''}`}
         </button>
         <button
           type="button"
@@ -564,15 +580,18 @@ export default function Itens() {
         </button>
       </div>
 
-      {/* Filtro completo: fixo no desktop, painel deslizante no celular */}
-      <div className="so-desktop">{painelFiltros}</div>
+      {/* Filtro completo recolhido por padrão: painel no desktop,
+          painel deslizante no celular */}
       {filtroAberto && (
-        <div className="modal-fundo so-celular" onClick={() => setFiltroAberto(false)}>
-          <div className="modal-conteudo" onClick={(e) => e.stopPropagation()}>
-            <h2 className="titulo-modal">Filtros</h2>
-            {painelFiltros}
+        <>
+          <div className="so-desktop">{painelFiltros}</div>
+          <div className="modal-fundo so-celular" onClick={() => setFiltroAberto(false)}>
+            <div className="modal-conteudo" onClick={(e) => e.stopPropagation()}>
+              <h2 className="titulo-modal">Filtros</h2>
+              {painelFiltros}
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       <div className="totais-consulta">
