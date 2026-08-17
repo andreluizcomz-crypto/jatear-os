@@ -958,6 +958,21 @@ a {
   font-size: 15px;
 }
 
+/* ---------- Caixas de marcação (tamanho fixo em qualquer contexto) ---------- */
+
+input[type='checkbox'],
+.campo input[type='checkbox'],
+.tabela-itens input[type='checkbox'],
+.campo-caixa input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  padding: 0;
+  flex: 0 0 auto;
+  accent-color: var(--jatear-vermelho);
+  cursor: pointer;
+}
+
 /* ---------- Tablet e desktop ---------- */
 
 @media (min-width: 768px) {
