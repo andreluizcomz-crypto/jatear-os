@@ -15,6 +15,7 @@ import Clientes from './pages/Clientes/Clientes';
 import ClienteForm from './pages/Clientes/ClienteForm';
 import Servicos from './pages/Servicos/Servicos';
 import Logs from './pages/Administracao/Logs';
+import Usuarios from './pages/Administracao/Usuarios';
 
 export default function App() {
   return (
@@ -43,6 +44,7 @@ export default function App() {
             <Route path="/clientes/:id" element={<ClienteForm />} />
             <Route path="/servicos" element={<Servicos />} />
             <Route path="/logs" element={<Logs />} />
+            <Route path="/usuarios" element={<Usuarios />} />
           </Route>
         </Routes>
       </BrowserRouter>
