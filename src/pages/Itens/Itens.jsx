@@ -114,9 +114,11 @@ export default function Itens() {
   const [filtros, setFiltros] = useState(() => {
     const preset = parametros.get('filtro');
     const base = preset ? presetFiltro(preset) : { ...FILTROS_INICIAIS };
-    // ?os=OS-2026-0001 restringe a consulta a uma OS específica
+    // ?os=OS-2026-0001 restringe a uma OS; ?cliente=<id> a um cliente
     const numeroOS = parametros.get('os');
     if (numeroOS) base.numeroOS = numeroOS;
+    const clienteId = parametros.get('cliente');
+    if (clienteId) base.clientes = [clienteId];
     return base;
   });
   const [filtroAberto, setFiltroAberto] = useState(false);

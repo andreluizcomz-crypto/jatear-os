@@ -605,16 +605,84 @@ a {
 
 /* ---------- Dashboard ---------- */
 
-.grade-indicadores {
+.titulo-secao-dash {
+  font-size: 15px;
+  font-weight: bold;
+  color: #555555;
+  margin: 4px 0 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.grade-destaques {
   display: grid;
   grid-template-columns: 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.cartao-destaque {
+  background: var(--branco);
+  border: 1px solid var(--cinza-borda);
+  border-radius: 10px;
+  padding: 20px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.cartao-destaque:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.destaque-principal {
+  background: var(--jatear-vermelho);
+  border-color: var(--jatear-vermelho);
+  color: var(--branco);
+}
+
+.destaque-principal .titulo-indicador,
+.destaque-principal .detalhe-indicador {
+  color: var(--branco);
+}
+
+.valor-destaque {
+  font-size: 30px;
+  font-weight: bold;
+  line-height: 1.1;
+}
+
+.cartao-destaque:not(.destaque-principal) .valor-destaque {
+  color: var(--jatear-vermelho);
+}
+
+.linha-ranking {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.valor-ranking {
+  color: var(--jatear-vermelho);
+  white-space: nowrap;
+}
+
+.grade-indicadores {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
 
 .cartao-indicador {
   background: var(--branco);
   border: 1px solid var(--cinza-borda);
-  border-left: 4px solid var(--jatear-vermelho);
+  border-left: 4px solid var(--cinza-borda);
   border-radius: 8px;
   padding: 16px;
   text-align: left;
@@ -623,6 +691,20 @@ a {
   gap: 4px;
   min-height: 44px;
   cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.cartao-indicador:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.indicador-alerta {
+  border-left-color: var(--cor-erro);
+}
+
+.indicador-alerta .valor-indicador {
+  color: var(--cor-erro);
 }
 
 .valor-indicador {
@@ -645,11 +727,15 @@ a {
   .grade-indicadores {
     grid-template-columns: repeat(3, 1fr);
   }
+
+  .grade-destaques {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 @media (min-width: 1025px) {
   .grade-indicadores {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(6, 1fr);
   }
 }
 
