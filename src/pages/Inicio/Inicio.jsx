@@ -6,7 +6,7 @@ import { listarOS } from '../../services/osService';
 import { listarFaturamentos } from '../../services/faturamentosService';
 import { formatarMoeda } from '../../utils/formatadores';
 import { hojeInput } from '../../utils/datas';
-import { itemAtrasado, itemSemPreco } from '../Itens/Itens';
+import { itemAtrasado, itemSemPreco } from '../../utils/regrasItem';
 
 function Cartao({ titulo, valor, detalhe, aoClicar }) {
   return (

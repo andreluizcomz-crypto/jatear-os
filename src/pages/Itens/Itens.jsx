@@ -8,12 +8,14 @@ import { formatarData, formatarMoeda } from '../../utils/formatadores';
 import { STATUS_ITEM, rotuloStatusItem } from '../../utils/constantes';
 import { exportarCsv } from '../../utils/csv';
 import { hojeInput } from '../../utils/datas';
+import { itemAtrasado, itemSemPreco } from '../../utils/regrasItem';
 import { gerarRelatorioGerencial, gerarRomaneio } from '../../services/pdfService';
 
 const FILTROS_INICIAIS = {
   clientes: [],
   subclientes: [],
   numeroOS: '',
+  numeroOSAte: '',
   texto: '',
   servicos: [],
   status: [],
@@ -31,19 +33,6 @@ const FILTROS_INICIAIS = {
 
 function paraData(valor) {
   return valor && typeof valor.toDate === 'function' ? valor.toDate() : valor || null;
-}
-
-export function itemAtrasado(item) {
-  if (['entregue', 'faturado', 'cancelado'].includes(item.status)) return false;
-  const prevista = paraData(item.dataPrevistaEntrega);
-  if (!prevista) return false;
-  return prevista < new Date(hojeInput() + 'T00:00:00');
-}
-
-export function itemSemPreco(item) {
-  const servicos = item.servicos || [];
-  if (servicos.length === 0) return true;
-  return servicos.some((s) => !(Number(s.precoUnitario) > 0));
 }
 
 const CAMPO_POR_CRITERIO = {
@@ -70,12 +59,14 @@ function presetFiltro(nome) {
     filtros.criterioData = 'faturamento';
     filtros.periodoInicio = inicioMes;
     filtros.periodoFim = hoje;
-  } else if (nome === 'semprego' || nome === 'sempreco') {
+  } else if (nome === 'sempreco') {
     filtros.somenteSemPreco = true;
     filtros.situacao = 'aberto';
   } else if (nome === 'execucao') {
     filtros.status = ['em_execucao'];
   } else if (nome === 'mes') {
+    // Mesmo critério do cartão "Produção do mês" do dashboard (conclusão)
+    filtros.criterioData = 'conclusao';
     filtros.periodoInicio = inicioMes;
     filtros.periodoFim = hoje;
   }
@@ -176,7 +167,14 @@ export default function Itens() {
         !filtros.subclientes.includes(item.subclienteNome || '')
       )
         return false;
-      if (
+      if (filtros.numeroOSAte.trim()) {
+        // Intervalo de números (formato zero-preenchido ordena corretamente)
+        const numero = (item.osNumero || '').toUpperCase();
+        const de = filtros.numeroOS.trim().toUpperCase();
+        const ate = filtros.numeroOSAte.trim().toUpperCase();
+        if (de && numero < de) return false;
+        if (numero > ate) return false;
+      } else if (
         filtros.numeroOS &&
         !(item.osNumero || '').toLowerCase().includes(filtros.numeroOS.trim().toLowerCase())
       )
@@ -234,6 +232,7 @@ export default function Itens() {
       if (campo === 'recebimento') return paraData(item.dataRecebimento)?.getTime() || 0;
       if (campo === 'conclusao') return paraData(item.dataConclusao)?.getTime() || 0;
       if (campo === 'seq') return Number(item.sequencia) || 0;
+      if (campo === 'servico') return item.servicos?.[0]?.servicoCodigo || '';
       return String(item[campo] || '').toLowerCase();
     };
     const fator = direcao === 'asc' ? 1 : -1;
@@ -359,11 +358,19 @@ export default function Itens() {
           </select>
         </div>
         <div className="campo">
-          <label>Número da OS</label>
+          <label>Número da OS (texto ou início do intervalo)</label>
           <input
             value={filtros.numeroOS}
             onChange={(e) => alterarFiltro('numeroOS', e.target.value)}
             placeholder="OS-2026-"
+          />
+        </div>
+        <div className="campo">
+          <label>Até a OS (fim do intervalo — opcional)</label>
+          <input
+            value={filtros.numeroOSAte}
+            onChange={(e) => alterarFiltro('numeroOSAte', e.target.value)}
+            placeholder="OS-2026-0050"
           />
         </div>
         <div className="campo campo-largo">
@@ -590,17 +597,17 @@ export default function Itens() {
               <th onClick={() => ordenarPor('descricao')}>Descrição</th>
               <th onClick={() => ordenarPor('clienteNome')}>Cliente</th>
               <th onClick={() => ordenarPor('subclienteNome')}>Subcliente</th>
-              <th>Serviço</th>
+              <th onClick={() => ordenarPor('servico')}>Serviço</th>
               <th onClick={() => ordenarPor('qtd')}>Qtd</th>
               <th onClick={() => ordenarPor('peso')}>Peso</th>
               <th onClick={() => ordenarPor('area')}>m²</th>
               {podeVerValores && <th onClick={() => ordenarPor('valor')}>Valor</th>}
               <th onClick={() => ordenarPor('recebimento')}>Recebimento</th>
               <th onClick={() => ordenarPor('conclusao')}>Conclusão</th>
-              {mostrarObservacoes && <th>Observações</th>}
+              {mostrarObservacoes && <th onClick={() => ordenarPor('observacoes')}>Observações</th>}
               <th onClick={() => ordenarPor('status')}>Status</th>
-              <th>Faturamento</th>
-              <th>NF</th>
+              <th onClick={() => ordenarPor('faturamentoNumero')}>Faturamento</th>
+              <th onClick={() => ordenarPor('notaFiscal')}>NF</th>
             </tr>
           </thead>
           <tbody>

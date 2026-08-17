@@ -11,7 +11,7 @@ export default function Confirmacao({
         <p style={{ marginBottom: 20, lineHeight: 1.5 }}>{mensagem}</p>
         <div className="acoes-modal">
           <button type="button" className="botao-secundario" onClick={onCancelar}>
-            Cancelar
+            Voltar
           </button>
           <button type="button" className="botao-primario botao-acao" onClick={onConfirmar}>
             {rotuloConfirmar}

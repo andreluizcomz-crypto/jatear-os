@@ -96,6 +96,21 @@ export default function OSForm() {
   const [indiceCancelarItem, setIndiceCancelarItem] = useState(null);
   const [modalEncerrar, setModalEncerrar] = useState(false);
   const [modalCancelarOS, setModalCancelarOS] = useState(false);
+  const [cabecalhoSujo, setCabecalhoSujo] = useState(false);
+  const [modalSair, setModalSair] = useState(false);
+
+  const temPendencias = cabecalhoSujo || itens.some((i) => i._alterado || !i.id);
+
+  // Fechar a aba/janela com alterações pendentes pede confirmação do navegador
+  useEffect(() => {
+    if (!temPendencias) return undefined;
+    const avisar = (evento) => {
+      evento.preventDefault();
+      evento.returnValue = '';
+    };
+    window.addEventListener('beforeunload', avisar);
+    return () => window.removeEventListener('beforeunload', avisar);
+  }, [temPendencias]);
 
   const clienteSelecionado = clientes.find((c) => c.id === cabecalho.clienteId);
 
@@ -160,6 +175,7 @@ export default function OSForm() {
 
   // ---------- Cabeçalho ----------
   function alterarCabecalho(campo, valor) {
+    setCabecalhoSujo(true);
     setCabecalho((atual) => {
       const novo = { ...atual, [campo]: valor };
       if (campo === 'clienteId') {
@@ -385,9 +401,14 @@ export default function OSForm() {
             (linhas[0].match(/;/g) || []).length >= (linhas[0].match(/,/g) || []).length
               ? ';'
               : ',';
-          const inicio = /descri/i.test(linhas[0]) ? 1 : 0;
+          const inicio = /descri|seq/i.test(linhas[0]) ? 1 : 0;
+          // Vírgula presente = decimal pt-BR (pontos são milhar);
+          // sem vírgula, o ponto é decimal (ex.: "2.5")
           const numeroBr = (v) => {
-            const n = parseFloat(String(v || '').replace(/\./g, '').replace(',', '.'));
+            const texto = String(v || '').trim();
+            const n = texto.includes(',')
+              ? parseFloat(texto.replace(/\./g, '').replace(',', '.'))
+              : parseFloat(texto);
             return Number.isFinite(n) ? n : 0;
           };
           const dataBr = (v) => {
@@ -396,35 +417,41 @@ export default function OSForm() {
           };
           let sequencia = proximaSequencia();
           const novos = [];
+          // Colunas conforme o cabeçalho da grade (a coluna Seq é ignorada):
+          // 0 Seq | 1 Descrição | 2 Cód. peça | 3 Qtd | 4 Peso un. | 5 Área un.
+          // | 6 Serviço | 7 Qtd cobrada | 8 Preço un. | 9 Valor (ignorado)
+          // | 10 Recebimento | 11 Prev. entrega | 12 Observações
           for (let i = inicio; i < linhas.length; i++) {
             const colunas = linhas[i].split(separador).map((v) => v.trim());
-            if (!colunas[0]) continue;
+            if (!colunas[1]) continue;
             const item = novoItemBase(sequencia++);
-            item.descricao = colunas[0];
-            item.codigoPeca = colunas[1] || '';
-            item.quantidade = numeroBr(colunas[2]) || 1;
-            item.pesoUnitarioKg = numeroBr(colunas[3]) || '';
-            item.areaUnitariaM2 = numeroBr(colunas[4]) || '';
-            const recebimento = dataBr(colunas[7]);
+            item.descricao = colunas[1];
+            item.codigoPeca = colunas[2] || '';
+            item.quantidade = numeroBr(colunas[3]) || 1;
+            item.pesoUnitarioKg = numeroBr(colunas[4]) || '';
+            item.areaUnitariaM2 = numeroBr(colunas[5]) || '';
+            const recebimento = dataBr(colunas[10]);
             if (recebimento) item.dataRecebimento = recebimento;
-            const previsao = dataBr(colunas[8]);
+            const previsao = dataBr(colunas[11]);
             if (previsao) item.dataPrevistaEntrega = previsao;
-            item.observacoes = colunas[9] || '';
-            const codigo = (colunas[5] || '').toUpperCase();
+            item.observacoes = colunas[12] || '';
+            const codigo = (colunas[6] || '').toUpperCase();
             const catalogo = servicos.find((s) => s.codigo === codigo);
             if (catalogo) {
+              const qtdCobradaCsv = colunas[7] ? numeroBr(colunas[7]) : 0;
               item.servicos = [
                 {
                   servicoCodigo: catalogo.codigo,
                   servicoNome: catalogo.nome,
                   unidade: catalogo.unidadePadrao,
-                  quantidadeCobrada: sugerirQuantidadeCobrada(catalogo.unidadePadrao, item),
-                  precoUnitario: colunas[6] ? numeroBr(colunas[6]) : sugerirPreco(catalogo.codigo),
+                  quantidadeCobrada:
+                    qtdCobradaCsv || sugerirQuantidadeCobrada(catalogo.unidadePadrao, item),
+                  precoUnitario: colunas[8] ? numeroBr(colunas[8]) : sugerirPreco(catalogo.codigo),
                   valor: 0,
                   esquemaPintura: '',
                   corRal: '',
                   espessuraEspecificada: '',
-                  qtdManual: false,
+                  qtdManual: qtdCobradaCsv > 0,
                 },
               ];
             }
@@ -638,6 +665,7 @@ export default function OSForm() {
       setOs(registro);
       setItens((await listarItens(id)).map(itemDoBanco));
       setSelecionados(new Set());
+      setCabecalhoSujo(false);
       setAviso('Alterações salvas.');
     } catch (excecao) {
       setErro(traduzirErroOS(excecao.message));
@@ -659,6 +687,13 @@ export default function OSForm() {
       <div className="barra-acoes">
         <h1 className="titulo-pagina">{ehNova ? 'Nova Ordem de Serviço' : cabecalho.numero}</h1>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <button
+            type="button"
+            className="botao-secundario"
+            onClick={() => (temPendencias ? setModalSair(true) : navegar('/ordens'))}
+          >
+            Voltar
+          </button>
           {os && (
             <span className="badge" style={{ background: 'var(--cinza-claro)' }}>
               {rotuloStatusOS(os.status)}
@@ -841,6 +876,9 @@ export default function OSForm() {
 
       <div className="rodape-totais">
         <div className="resumo-totais">
+          {temPendencias && !ehNova && (
+            <span className="badge badge-alerta">Alterações não salvas</span>
+          )}
           <span>
             Itens: <strong>{totais.qtdItens}</strong>
           </span>
@@ -926,6 +964,15 @@ export default function OSForm() {
           rotuloConfirmar="Cancelar OS"
           onConfirmar={confirmarCancelamentoOS}
           onCancelar={() => setModalCancelarOS(false)}
+        />
+      )}
+
+      {modalSair && (
+        <Confirmacao
+          mensagem="Há alterações não salvas nesta OS. Se sair agora, elas serão perdidas."
+          rotuloConfirmar="Sair sem salvar"
+          onConfirmar={() => navegar('/ordens')}
+          onCancelar={() => setModalSair(false)}
         />
       )}
 

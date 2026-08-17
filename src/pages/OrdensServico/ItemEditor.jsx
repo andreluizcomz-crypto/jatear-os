@@ -22,6 +22,7 @@ export default function ItemEditor({
 }) {
   const [dados, setDados] = useState({ ...item });
   const [erro, setErro] = useState('');
+  const [justificativaCancelamento, setJustificativaCancelamento] = useState('');
   const [envio, setEnvio] = useState(null); // { tipo, progresso, tarefa }
   const [fotoAmpliada, setFotoAmpliada] = useState(null);
   const bloqueado = dados.faturado === true;
@@ -165,9 +166,22 @@ export default function ItemEditor({
       setErro('Informe a data de conclusão.');
       return;
     }
+    let finais = dados;
+    if (dados.status === 'cancelado' && item.status !== 'cancelado') {
+      if (!justificativaCancelamento.trim()) {
+        setErro('Informe a justificativa do cancelamento.');
+        return;
+      }
+      finais = {
+        ...dados,
+        observacoes: [dados.observacoes, `Cancelado: ${justificativaCancelamento.trim()}`]
+          .filter(Boolean)
+          .join(' | '),
+      };
+    }
     // Só agora as fotos removidas saem do Storage — quem cancela não perde nada
     fotosRemovidas.current.forEach((caminho) => excluirFoto(caminho));
-    onSalvar(dados);
+    onSalvar(finais);
   }
 
   return (
@@ -250,15 +264,23 @@ export default function ItemEditor({
                 value={dados.status}
                 onChange={(e) => alterar('status', e.target.value)}
               >
-                {statusDisponiveis(dados.status, ehAdministrador)
-                  .filter((s) => s !== 'cancelado' || dados.status === 'cancelado')
-                  .map((s) => (
-                    <option key={s} value={s}>
-                      {rotuloStatusItem(s)}
-                    </option>
-                  ))}
+                {statusDisponiveis(dados.status, ehAdministrador).map((s) => (
+                  <option key={s} value={s}>
+                    {rotuloStatusItem(s)}
+                  </option>
+                ))}
               </select>
             </div>
+            {dados.status === 'cancelado' && item.status !== 'cancelado' && (
+              <div className="campo campo-largo">
+                <label>Justificativa do cancelamento *</label>
+                <input
+                  value={justificativaCancelamento}
+                  onChange={(e) => setJustificativaCancelamento(e.target.value)}
+                  placeholder="Motivo do cancelamento deste item"
+                />
+              </div>
+            )}
             <div className="campo">
               <label>Data de conclusão</label>
               <input

@@ -5,8 +5,7 @@ import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { gerarFaturamento } from '../../services/faturamentosService';
 import { formatarMoeda } from '../../utils/formatadores';
-import { dataParaInput } from '../../utils/datas';
-import { inputParaTimestamp } from '../../utils/datas';
+import { dataParaInput, inputParaTimestamp } from '../../utils/datas';
 
 function traduzirErroFat(mensagem) {
   const mapa = {

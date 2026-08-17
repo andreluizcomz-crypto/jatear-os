@@ -39,7 +39,12 @@ export default function GradeItens({
         </h2>
         {podeEditar && (
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button type="button" className="botao-secundario" onClick={() => inputCsv.current.click()}>
+            <button
+              type="button"
+              className="botao-secundario"
+              onClick={() => inputCsv.current.click()}
+              title="Colunas: Seq; Descrição; Cód. peça; Qtd; Peso un. (kg); Área un. (m²); Serviço; Qtd cobrada; Preço un.; Valor; Recebimento (DD/MM/AAAA); Prev. entrega; Observações"
+            >
               Importar CSV
             </button>
             <button type="button" className="botao-primario botao-acao" onClick={acoes.adicionar}>
@@ -216,14 +221,18 @@ export default function GradeItens({
                     />
                   </td>
                   <td className="col-observacoes">
-                    <input
-                      value={item.observacoes || ''}
-                      title={item.observacoes || ''}
-                      maxLength={500}
-                      placeholder=""
-                      onChange={(e) => acoes.alterarItem(indice, 'observacoes', e.target.value)}
-                      disabled={bloqueada}
-                    />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      {item.observacoes && (
+                        <span className="indicador-obs" title="Item com observações">●</span>
+                      )}
+                      <input
+                        value={item.observacoes || ''}
+                        title={item.observacoes || 'Clique em Editar para texto longo'}
+                        maxLength={500}
+                        onChange={(e) => acoes.alterarItem(indice, 'observacoes', e.target.value)}
+                        disabled={bloqueada}
+                      />
+                    </div>
                   </td>
                   <td>
                     {item.faturado || !podeEditar ? (
@@ -251,19 +260,21 @@ export default function GradeItens({
                         Editar
                       </button>
                       {podeEditar && !item.faturado && (
-                        <>
-                          <button type="button" onClick={() => acoes.duplicar(indice)} title="Duplicar linha">
-                            Duplicar
-                          </button>
-                          <button
-                            type="button"
-                            className="acao-excluir"
-                            onClick={() => acoes.excluir(indice)}
-                            title="Excluir item"
-                          >
-                            Excluir
-                          </button>
-                        </>
+                        <button type="button" onClick={() => acoes.duplicar(indice)} title="Duplicar linha">
+                          Duplicar
+                        </button>
+                      )}
+                      {podeEditar && !item.id && (
+                        // Registro operacional salvo não é excluído (regra 7.9) —
+                        // apenas itens ainda não gravados podem ser removidos
+                        <button
+                          type="button"
+                          className="acao-excluir"
+                          onClick={() => acoes.excluir(indice)}
+                          title="Remover item não salvo"
+                        >
+                          Excluir
+                        </button>
                       )}
                     </div>
                   </td>
