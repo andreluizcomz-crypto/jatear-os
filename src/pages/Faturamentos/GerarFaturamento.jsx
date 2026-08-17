@@ -232,6 +232,7 @@ export default function GerarFaturamento() {
               <th>OS</th>
               <th>Seq</th>
               <th>Descrição</th>
+              <th>NF de recebimento</th>
               <th>Subcliente</th>
               <th>Qtd</th>
               <th>Peso (kg)</th>
@@ -245,6 +246,7 @@ export default function GerarFaturamento() {
                 <td>{item.osNumero}</td>
                 <td>{item.sequencia}</td>
                 <td style={{ whiteSpace: 'normal', minWidth: 160 }}>{item.descricao}</td>
+                <td>{item.notaFiscalRecebimento || ''}</td>
                 <td>{item.subclienteNome || ''}</td>
                 <td>{item.quantidade}</td>
                 <td>{item.pesoTotalKg || ''}</td>

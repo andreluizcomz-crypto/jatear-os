@@ -160,25 +160,26 @@ export function gerarPdfFaturamento(faturamento) {
     grupos.forEach((itensGrupo, titulo) => {
       tabela({
         startY: yAtual,
-        head: [[{ content: titulo, colSpan: 6, styles: { fillColor: [31, 31, 31] } }],
-          ['Seq', 'Descrição', 'Qtd', 'Peso (kg)', 'm²', 'Valor']],
+        head: [[{ content: titulo, colSpan: 7, styles: { fillColor: [31, 31, 31] } }],
+          ['Seq', 'Descrição', 'NF receb.', 'Qtd', 'Peso (kg)', 'm²', 'Valor']],
         body: itensGrupo.map((item) => [
           item.sequencia,
           item.descricao,
+          item.notaFiscalRecebimento || '',
           item.quantidade,
           item.pesoTotalKg || '',
           item.areaTotalM2 || '',
           moedaPdf(item.valorTotalItem),
         ]),
         foot: [[
-          '', 'Subtotal',
+          '', 'Subtotal', '',
           String(itensGrupo.reduce((t, i) => t + (Number(i.quantidade) || 0), 0)),
           String(Number(itensGrupo.reduce((t, i) => t + (Number(i.pesoTotalKg) || 0), 0).toFixed(2))),
           String(Number(itensGrupo.reduce((t, i) => t + (Number(i.areaTotalM2) || 0), 0).toFixed(2))),
           moedaPdf(itensGrupo.reduce((t, i) => t + (Number(i.valorTotalItem) || 0), 0)),
         ]],
         footStyles: { fillColor: [245, 245, 245], textColor: 0, fontStyle: 'bold' },
-        columnStyles: { 5: { halign: 'right' } },
+        columnStyles: { 6: { halign: 'right' } },
       });
       yAtual = doc.lastAutoTable.finalY + 4;
     });

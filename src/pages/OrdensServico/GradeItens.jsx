@@ -43,7 +43,7 @@ export default function GradeItens({
               type="button"
               className="botao-secundario"
               onClick={() => inputCsv.current.click()}
-              title="Colunas: Seq; Descrição; Cód. peça; Qtd; Peso un. (kg); Área un. (m²); Serviço; Qtd cobrada; Preço un.; Valor; Recebimento (DD/MM/AAAA); Prev. entrega; Observações"
+              title="Colunas: Seq; Descrição; Cód. peça; Qtd; Peso un. (kg); Área un. (m²); Serviço; Qtd cobrada; Preço un.; Valor; Recebimento (DD/MM/AAAA); Prev. entrega; Observações; NF de recebimento"
             >
               Importar CSV
             </button>
@@ -88,6 +88,7 @@ export default function GradeItens({
               {podeVerValores && <th>Preço un.</th>}
               {podeVerValores && <th>Valor</th>}
               <th>Recebimento</th>
+              <th>NF de recebimento</th>
               <th>Prev. entrega</th>
               <th className="col-observacoes">Observações</th>
               <th>Status</th>
@@ -212,6 +213,16 @@ export default function GradeItens({
                   </td>
                   <td>
                     <input
+                      value={item.notaFiscalRecebimento || ''}
+                      onChange={(e) =>
+                        acoes.alterarItem(indice, 'notaFiscalRecebimento', e.target.value)
+                      }
+                      title="Nota fiscal com que a peça chegou do cliente"
+                      disabled={bloqueada}
+                    />
+                  </td>
+                  <td>
+                    <input
                       type="date"
                       value={item.dataPrevistaEntrega || ''}
                       onChange={(e) =>
@@ -292,7 +303,7 @@ export default function GradeItens({
             })}
             {itens.length === 0 && (
               <tr>
-                <td colSpan={16} className="texto-apoio" style={{ padding: 16 }}>
+                <td colSpan={17} className="texto-apoio" style={{ padding: 16 }}>
                   Nenhum item lançado. Use "Adicionar item" ou "Importar CSV".
                 </td>
               </tr>
@@ -309,7 +320,7 @@ export default function GradeItens({
                 {podeVerValores && (
                   <td className="celula-valor">{formatarMoeda(totais.valorTotal)}</td>
                 )}
-                <td colSpan={5} />
+                <td colSpan={6} />
               </tr>
             </tfoot>
           )}

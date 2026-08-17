@@ -235,6 +235,7 @@ export default function OSForm() {
       pesoUnitarioKg: '',
       areaUnitariaM2: '',
       dataRecebimento: hojeInput(),
+      notaFiscalRecebimento: '',
       dataPrevistaEntrega: cabecalho.dataPrevistaEntrega || '',
       dataConclusao: '',
       dataEntrega: '',
@@ -442,6 +443,7 @@ export default function OSForm() {
             const previsao = dataBr(colunas[11]);
             if (previsao) item.dataPrevistaEntrega = previsao;
             item.observacoes = colunas[12] || '';
+            item.notaFiscalRecebimento = colunas[13] || '';
             const codigo = (colunas[6] || '').toUpperCase();
             const catalogo = servicos.find((s) => s.codigo === codigo);
             if (catalogo) {

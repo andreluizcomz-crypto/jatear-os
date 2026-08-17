@@ -204,7 +204,7 @@ export default function Itens() {
       )
         return false;
       if (texto) {
-        const alvo = [item.descricao, item.codigoPeca, item.observacoes]
+        const alvo = [item.descricao, item.codigoPeca, item.observacoes, item.notaFiscalRecebimento]
           .join(' ')
           .toLowerCase();
         if (!alvo.includes(texto)) return false;
@@ -312,7 +312,7 @@ export default function Itens() {
       'OS', 'Seq', 'Descrição', 'Cód. peça', 'Cliente', 'Subcliente', 'Serviços', 'Qtd',
       'Peso (kg)', 'Área (m²)',
       ...(podeVerValores ? ['Valor'] : []),
-      'Recebimento', 'Conclusão', 'Observações', 'Status', 'Faturamento', 'NF',
+      'Recebimento', 'NF recebimento', 'Conclusão', 'Observações', 'Status', 'Faturamento', 'NF',
     ];
     exportarCsv(
       `itens-${hojeInput()}.csv`,
@@ -325,7 +325,8 @@ export default function Itens() {
         String(item.pesoTotalKg ?? '').replace('.', ','),
         String(item.areaTotalM2 ?? '').replace('.', ','),
         ...(podeVerValores ? [String(item.valorTotalItem ?? '').replace('.', ',')] : []),
-        formatarData(item.dataRecebimento), formatarData(item.dataConclusao),
+        formatarData(item.dataRecebimento), item.notaFiscalRecebimento || '',
+        formatarData(item.dataConclusao),
         item.observacoes || '', rotuloStatusItem(item.status),
         item.faturamentoNumero || '', item.notaFiscal || '',
       ])

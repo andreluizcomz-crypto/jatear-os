@@ -251,6 +251,14 @@ export default function ItemEditor({
               />
             </div>
             <div className="campo">
+              <label>NF de recebimento</label>
+              <input
+                value={dados.notaFiscalRecebimento || ''}
+                onChange={(e) => alterar('notaFiscalRecebimento', e.target.value)}
+                placeholder="Nota com que a peça chegou"
+              />
+            </div>
+            <div className="campo">
               <label>Previsão de entrega</label>
               <input
                 type="date"

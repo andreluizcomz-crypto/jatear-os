@@ -67,6 +67,7 @@ export async function gerarFaturamento(chaves, dados, uid) {
       sequencia: item.sequencia,
       descricao: item.descricao,
       subclienteNome: item.subclienteNome || '',
+      notaFiscalRecebimento: item.notaFiscalRecebimento || '',
       quantidade: item.quantidade || 0,
       pesoTotalKg: item.pesoTotalKg || 0,
       areaTotalM2: item.areaTotalM2 || 0,
