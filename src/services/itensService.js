@@ -93,9 +93,12 @@ export async function salvarItens(osId, cabecalho, itens, uid) {
     // derrubaria o lote inteiro (Firestore rejeita undefined)
     delete dados._alterado;
     delete dados._retrocessoDe;
+    delete dados._novo;
     delete dados.id;
-    if (!item.id) {
-      const ref = doc(colecao);
+    if (item._novo || !item.id) {
+      // Itens novos já chegam com id pré-gerado na tela (permite anexar
+      // fotos antes de salvar); o fallback cobre itens sem id
+      const ref = item.id ? doc(colecao, item.id) : doc(colecao);
       dados.criadoEm = serverTimestamp();
       lote.set(ref, dados);
       novos++;

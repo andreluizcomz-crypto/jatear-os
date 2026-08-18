@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { collection, doc } from 'firebase/firestore';
+import { db } from '../../firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { listarClientes } from '../../services/clientesService';
 import { listarServicos } from '../../services/servicosService';
@@ -102,7 +104,7 @@ export default function OSForm() {
   const [cabecalhoSujo, setCabecalhoSujo] = useState(false);
   const [modalSair, setModalSair] = useState(false);
 
-  const temPendencias = cabecalhoSujo || itens.some((i) => i._alterado || !i.id);
+  const temPendencias = cabecalhoSujo || itens.some((i) => i._alterado || i._novo);
 
   // Fechar a aba/janela com alterações pendentes pede confirmação do navegador
   useEffect(() => {
@@ -228,6 +230,9 @@ export default function OSForm() {
   // ---------- Itens ----------
   function novoItemBase(sequencia) {
     return {
+      // ID pré-gerado: permite anexar fotos antes mesmo de salvar
+      id: doc(collection(db, 'ordens_servico', id, 'itens')).id,
+      _novo: true,
       sequencia,
       descricao: '',
       codigoPeca: '',
@@ -372,10 +377,12 @@ export default function OSForm() {
     duplicar(indice) {
       setItens((atuais) => {
         const origem = atuais[indice];
-        // Sem `id` (a cópia é um item novo) e sem rastros de faturamento
+        // A cópia é um item novo (id próprio) e sem rastros de faturamento
         const { id: _id, ...semId } = calcularItem(origem);
         const copia = {
           ...semId,
+          id: doc(collection(db, 'ordens_servico', id, 'itens')).id,
+          _novo: true,
           sequencia: proximaSequencia(),
           status: 'recebido',
           faturado: false,
@@ -593,7 +600,7 @@ export default function OSForm() {
     setIndiceExcluir(null);
     setSelecionados(new Set());
     const item = itens[indice];
-    if (item.id) {
+    if (item.id && !item._novo) {
       try {
         await excluirItem(id, item.id, usuario.uid);
       } catch (_) {

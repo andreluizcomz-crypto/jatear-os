@@ -284,7 +284,7 @@ export default function GradeItens({
                           Duplicar
                         </button>
                       )}
-                      {podeEditar && !item.id && (
+                      {podeEditar && item._novo && (
                         // Registro operacional salvo não é excluído (regra 7.9) —
                         // apenas itens ainda não gravados podem ser removidos
                         <button
