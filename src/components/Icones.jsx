@@ -59,6 +59,16 @@ export function IconeMenu(props) {
   );
 }
 
+export function IconeOrcamento(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M8 3h8v4H8z" />
+      <path d="M16 4h3v18H5V4h3" />
+      <path d="M9 12h6M9 16h6" />
+    </svg>
+  );
+}
+
 export function IconeSair(props) {
   return (
     <svg {...base} {...props}>

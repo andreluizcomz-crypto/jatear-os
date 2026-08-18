@@ -914,6 +914,67 @@ a {
   max-height: 100%;
 }
 
+/* ---------- Orçamentos ---------- */
+
+.botoes-anexo {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  align-items: center;
+}
+
+.gravador-audio {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.linha-anexo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--cinza-borda);
+}
+
+.linha-anexo a {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.linha-lembrete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--cinza-claro);
+}
+
+.linha-lembrete label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  flex: 1;
+  cursor: pointer;
+}
+
+.lembrete-feito {
+  text-decoration: line-through;
+  color: #999999;
+}
+
+.linha-lembrete .acao-excluir {
+  background: none;
+  border: none;
+  color: var(--cor-erro);
+  font-size: 12px;
+  padding: 6px;
+}
+
 .botao-flutuante {
   position: fixed;
   right: 16px;

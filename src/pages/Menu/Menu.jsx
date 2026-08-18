@@ -59,6 +59,16 @@ export default function Menu() {
       </div>
 
       <h2 className="texto-apoio" style={{ fontWeight: 'bold', marginBottom: 8 }}>
+        Comercial
+      </h2>
+      <div className="lista-menu" style={{ marginBottom: 16 }}>
+        <Link to="/orcamentos">
+          <IconeOS width={20} height={20} />
+          Orçamentos de campo
+        </Link>
+      </div>
+
+      <h2 className="texto-apoio" style={{ fontWeight: 'bold', marginBottom: 8 }}>
         Cadastros
       </h2>
       <div className="lista-menu" style={{ marginBottom: 16 }}>

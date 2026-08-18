@@ -105,6 +105,13 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
+    // ---------- orcamentos (cotações de obra feitas em campo) ----------
+    match /orcamentos/{orcamentoId} {
+      allow read: if usuarioAtivo();
+      allow create, update: if podeEditarOS();
+      allow delete: if false; // usar status, nunca excluir
+    }
+
     // Qualquer outra coleção: bloqueada até a fase que a criar,
     // quando as regras dela serão escritas junto.
     match /{documento=**} {

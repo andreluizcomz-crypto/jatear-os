@@ -16,6 +16,8 @@ import ClienteForm from './pages/Clientes/ClienteForm';
 import Servicos from './pages/Servicos/Servicos';
 import Logs from './pages/Administracao/Logs';
 import Usuarios from './pages/Administracao/Usuarios';
+import Orcamentos from './pages/Orcamentos/Orcamentos';
+import OrcamentoForm from './pages/Orcamentos/OrcamentoForm';
 
 export default function App() {
   return (
@@ -45,6 +47,9 @@ export default function App() {
             <Route path="/servicos" element={<Servicos />} />
             <Route path="/logs" element={<Logs />} />
             <Route path="/usuarios" element={<Usuarios />} />
+            <Route path="/orcamentos" element={<Orcamentos />} />
+            <Route path="/orcamentos/novo" element={<OrcamentoForm />} />
+            <Route path="/orcamentos/:id" element={<OrcamentoForm />} />
           </Route>
         </Routes>
       </BrowserRouter>

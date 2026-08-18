@@ -7,6 +7,7 @@ import {
   IconeInicio,
   IconeItens,
   IconeMenu,
+  IconeOrcamento,
   IconeOS,
   IconeSair,
 } from './Icones';
@@ -23,6 +24,7 @@ const destinos = [
 // Sidebar do desktop — mesmo padrão visual do LMS
 const grupoPrincipal = [
   { para: '/', rotulo: 'Início', Icone: IconeInicio },
+  { para: '/orcamentos', rotulo: 'Orçamentos', Icone: IconeOrcamento },
   { para: '/ordens', rotulo: 'Ordens de Serviço', Icone: IconeOS },
   { para: '/itens', rotulo: 'Consulta de Itens', Icone: IconeItens },
   { para: '/faturamentos', rotulo: 'Faturamento', Icone: IconeFaturamento },
