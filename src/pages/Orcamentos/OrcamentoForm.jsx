@@ -13,6 +13,14 @@ import {
 import { listarClientes } from '../../services/clientesService';
 import GravadorAudio from '../../components/GravadorAudio';
 import Confirmacao from '../../components/Confirmacao';
+import { comprimirImagem } from '../../utils/imagem';
+import {
+  adicionarNaFila,
+  aplicarResolvidos,
+  guardarPreview,
+  obterPreview,
+  removerDaFila,
+} from '../../utils/filaUploads';
 
 const ROTULO_TIPO = { foto: 'Foto', video: 'Vídeo', audio: 'Áudio', arquivo: 'Arquivo' };
 
@@ -69,7 +77,7 @@ export default function OrcamentoForm() {
     if (!ehNovo) {
       buscarOrcamento(idRota)
         .then((registro) => {
-          if (registro) setDados({ ...orcamentoVazio, ...registro });
+          if (registro) setDados(aplicarResolvidos({ ...orcamentoVazio, ...registro }));
           else setErro('Orçamento não encontrado.');
         })
         .catch(() => setErro('Não foi possível carregar o orçamento.'))
@@ -130,9 +138,51 @@ export default function OrcamentoForm() {
     alterar('lembretes', dados.lembretes.filter((l) => l.id !== lembreteId));
   }
 
+  // Sem internet: o arquivo fica represado no aparelho (IndexedDB) e um
+  // marcador "aguardando conexão" entra no item; o envio é automático depois
+  async function enfileirarAnexo(itemId, tipo, arquivo, nome) {
+    const conteudo = tipo === 'foto' ? await comprimirImagem(arquivo) : arquivo;
+    const chave = crypto.randomUUID();
+    await adicionarNaFila({
+      chave,
+      orcamentoId: id,
+      itemId,
+      tipo,
+      nome,
+      blob: conteudo,
+      contentType: tipo === 'foto' ? 'image/jpeg' : arquivo.type || 'application/octet-stream',
+      criadoEm: Date.now(),
+    });
+    if (tipo === 'foto') guardarPreview(chave, conteudo);
+    const marcador = {
+      tipo,
+      nome,
+      pendente: true,
+      chaveFila: chave,
+      enviadoEm: new Date().toISOString(),
+    };
+    setDados((atual) => ({
+      ...atual,
+      itens: atual.itens.map((item) =>
+        item.id === itemId ? { ...item, anexos: [...(item.anexos || []), marcador] } : item
+      ),
+    }));
+    setAviso(
+      'Sem internet: o arquivo ficou guardado no aparelho e será enviado automaticamente quando a conexão voltar. Salve o orçamento.'
+    );
+  }
+
   // ---------- Anexos por item ----------
   async function enviarAnexo(itemId, tipo, arquivo, nome) {
     setErro('');
+    if (!navigator.onLine) {
+      try {
+        await enfileirarAnexo(itemId, tipo, arquivo, nome);
+      } catch (_) {
+        setErro('Não foi possível guardar o arquivo no aparelho.');
+      }
+      return;
+    }
     try {
       const { tarefa, promessa } = await iniciarEnvioAnexo(
         id,
@@ -154,9 +204,17 @@ export default function OrcamentoForm() {
       setAviso('Anexo enviado. Lembre de salvar o orçamento para gravá-lo.');
     } catch (excecao) {
       setEnvio(null);
-      if (excecao?.code !== 'storage/canceled') {
-        setErro('Não foi possível enviar o anexo. Verifique a conexão e tente novamente.');
+      if (excecao?.code === 'storage/canceled') return;
+      if (!navigator.onLine) {
+        // A conexão caiu durante o envio: guarda no aparelho
+        try {
+          await enfileirarAnexo(itemId, tipo, arquivo, nome);
+          return;
+        } catch (_) {
+          /* segue para a mensagem de erro */
+        }
       }
+      setErro('Não foi possível enviar o anexo. Verifique a conexão e tente novamente.');
     }
   }
 
@@ -169,7 +227,8 @@ export default function OrcamentoForm() {
   function confirmarExclusaoAnexo() {
     const { itemId, anexo } = anexoExcluir;
     setAnexoExcluir(null);
-    if (anexo.caminho) excluirAnexo(anexo.caminho);
+    if (anexo.pendente) removerDaFila(anexo.chaveFila).catch(() => {});
+    else if (anexo.caminho) excluirAnexo(anexo.caminho);
     setDados((atual) => ({
       ...atual,
       itens: atual.itens.map((item) =>
@@ -197,23 +256,32 @@ export default function OrcamentoForm() {
       return;
     }
     setSalvando(true);
-    const corpo = {
+    // Substitui marcadores de anexos que a fila já enviou (evita regravar
+    // um pendente por cima do anexo definitivo)
+    const corpo = aplicarResolvidos({
       ...dados,
       clienteNome: dados.clienteNome.trim(),
       itens: itensValidos,
       valorEstimado: Number(dados.valorEstimado) || 0,
-    };
+    });
     delete corpo.id;
+    const avisoOffline =
+      'Orçamento salvo no aparelho. O número e os arquivos serão sincronizados automaticamente quando houver internet.';
     try {
       if (ehNovo && !dados.numero) {
         const numero = await criarOrcamento(id, corpo, usuario.uid);
-        setDados((atual) => ({ ...atual, numero, itens: itensValidos }));
+        setDados((atual) => ({
+          ...atual,
+          ...corpo,
+          numero: numero || '',
+          numeroPendente: !numero,
+        }));
         navegar(`/orcamentos/${id}`, { replace: true });
-        setAviso(`Orçamento ${numero} criado.`);
+        setAviso(numero ? `Orçamento ${numero} criado.` : avisoOffline);
       } else {
         await atualizarOrcamento(id, corpo, usuario.uid);
-        setDados((atual) => ({ ...atual, itens: itensValidos }));
-        setAviso('Orçamento salvo.');
+        setDados((atual) => ({ ...atual, ...corpo }));
+        setAviso(navigator.onLine ? 'Orçamento salvo.' : avisoOffline);
       }
     } catch (_) {
       setErro('Não foi possível salvar. Verifique sua permissão e tente novamente.');
@@ -290,26 +358,48 @@ export default function OrcamentoForm() {
 
         {porTipo('foto').length > 0 && (
           <div className="miniaturas" style={{ marginBottom: 8 }}>
-            {porTipo('foto').map((anexo) => (
-              <div key={anexo.urlStorage} className="miniatura">
-                <img
-                  src={anexo.urlStorage}
-                  alt="Foto do item"
-                  onClick={() => setFotoAmpliada(anexo.urlStorage)}
-                />
-                {podeEditar && (
-                  <button type="button" onClick={() => setAnexoExcluir({ itemId, anexo })}>
-                    Remover
-                  </button>
-                )}
-              </div>
-            ))}
+            {porTipo('foto').map((anexo) => {
+              const url = anexo.urlStorage || obterPreview(anexo.chaveFila);
+              return (
+                <div key={anexo.urlStorage || anexo.chaveFila} className="miniatura">
+                  {url ? (
+                    <img
+                      src={url}
+                      alt="Foto do item"
+                      onClick={() => !anexo.pendente && setFotoAmpliada(anexo.urlStorage)}
+                    />
+                  ) : (
+                    <div className="miniatura-vazia">Foto</div>
+                  )}
+                  {anexo.pendente && (
+                    <span className="dica-campo dica-erro">Aguardando conexão</span>
+                  )}
+                  {podeEditar && (
+                    <button type="button" onClick={() => setAnexoExcluir({ itemId, anexo })}>
+                      Remover
+                    </button>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
 
         {porTipo('audio').map((anexo) => (
-          <div key={anexo.urlStorage} className="linha-anexo">
-            <audio controls src={anexo.urlStorage} preload="none" style={{ flex: 1, minWidth: 0 }} />
+          <div key={anexo.urlStorage || anexo.chaveFila} className="linha-anexo">
+            {anexo.pendente ? (
+              <span style={{ flex: 1, minWidth: 0 }}>
+                {anexo.nome}{' '}
+                <span className="badge badge-alerta">Aguardando conexão</span>
+              </span>
+            ) : (
+              <audio
+                controls
+                src={anexo.urlStorage}
+                preload="none"
+                style={{ flex: 1, minWidth: 0 }}
+              />
+            )}
             {podeEditar && (
               <button
                 type="button"
@@ -324,16 +414,23 @@ export default function OrcamentoForm() {
 
         {['video', 'arquivo'].map((tipo) =>
           porTipo(tipo).map((anexo) => (
-            <div key={anexo.urlStorage} className="linha-anexo">
+            <div key={anexo.urlStorage || anexo.chaveFila} className="linha-anexo">
               <span className="badge badge-ativo">{ROTULO_TIPO[tipo]}</span>
-              <a
-                href={anexo.urlStorage}
-                target="_blank"
-                rel="noreferrer"
-                style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-              >
-                {anexo.nome}
-              </a>
+              {anexo.pendente ? (
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  {anexo.nome}{' '}
+                  <span className="badge badge-alerta">Aguardando conexão</span>
+                </span>
+              ) : (
+                <a
+                  href={anexo.urlStorage}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                >
+                  {anexo.nome}
+                </a>
+              )}
               {podeEditar && (
                 <button
                   type="button"
@@ -353,7 +450,10 @@ export default function OrcamentoForm() {
   return (
     <div className="pagina-os">
       <div className="barra-acoes">
-        <h1 className="titulo-pagina">{dados.numero || 'Novo orçamento'}</h1>
+        <h1 className="titulo-pagina">
+          {dados.numero ||
+            (dados.numeroPendente ? 'Orçamento — aguardando número' : 'Novo orçamento')}
+        </h1>
         <button type="button" className="botao-secundario" onClick={() => navegar('/orcamentos')}>
           Voltar
         </button>

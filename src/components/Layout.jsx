@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom';
 import LogoJatear from '../assets/LogoJatear';
 import IndicadorConexao from './IndicadorConexao';
+import SincronizadorOffline from './SincronizadorOffline';
 import { useAuth } from '../contexts/AuthContext';
 import {
   IconeFaturamento,
@@ -100,6 +101,7 @@ export default function Layout() {
       </aside>
 
       <IndicadorConexao />
+      <SincronizadorOffline />
 
       <main className="conteudo">
         <Outlet />

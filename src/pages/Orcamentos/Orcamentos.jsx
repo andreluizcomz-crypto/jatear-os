@@ -102,7 +102,7 @@ export default function Orcamentos() {
             >
               <div className="linha-principal">
                 <strong>
-                  {orc.numero} — {orc.clienteNome}
+                  {orc.numero || 'Aguardando número'} — {orc.clienteNome}
                 </strong>
                 <span
                   className="badge"

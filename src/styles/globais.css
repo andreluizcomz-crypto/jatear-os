@@ -811,6 +811,20 @@ a {
 
 /* ---------- Conexão e fotos ---------- */
 
+.banner-sincronizacao {
+  position: fixed;
+  top: var(--altura-barra-superior);
+  left: 0;
+  right: 0;
+  background: var(--cor-sucesso);
+  color: var(--branco);
+  text-align: center;
+  font-size: 13px;
+  font-weight: bold;
+  padding: 6px 12px;
+  z-index: 99;
+}
+
 .banner-offline {
   position: fixed;
   top: var(--altura-barra-superior);
@@ -849,6 +863,18 @@ a {
   gap: 8px;
   flex-wrap: wrap;
   margin-top: 8px;
+}
+
+.miniatura-vazia {
+  width: 88px;
+  height: 88px;
+  border-radius: 6px;
+  border: 1px dashed var(--cinza-borda);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999999;
+  font-size: 12px;
 }
 
 .miniatura img {
@@ -1278,7 +1304,8 @@ input[type='checkbox'],
     z-index: 110;
   }
 
-  .banner-offline {
+  .banner-offline,
+  .banner-sincronizacao {
     top: 0;
     left: 224px;
   }
