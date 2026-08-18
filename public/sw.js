@@ -1,7 +1,7 @@
 // Service worker do Jatear OS — cache do app shell apenas.
 // Navegações: rede primeiro (garante versão nova), cache como reserva offline.
 // Assets com hash do build: cache primeiro (são imutáveis).
-const CACHE = 'jatear-os-shell-v2';
+const CACHE = 'jatear-os-shell-v3';
 
 self.addEventListener('install', () => {
   self.skipWaiting();
