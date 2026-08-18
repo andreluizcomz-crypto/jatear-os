@@ -1452,6 +1452,12 @@ body {
   padding-bottom: 170px;
 }
 
+/* Telas com tabela larga (consulta, grade da OS, faturamentos, logs)
+   ocupam a largura inteira do monitor; as demais mantêm o limite */
+.conteudo:has(.rolagem-horizontal) {
+  max-width: none;
+}
+
 .acoes-modal,
 .acoes-rodape {
   gap: 10px;
