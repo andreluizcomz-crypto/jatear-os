@@ -11,8 +11,8 @@ service firebase.storage {
       allow delete: if request.auth != null;
     }
 
-    // Anexos de orçamento de campo: fotos, vídeos, áudios e documentos
-    match /orcamentos/{orcamentoId}/{arquivo} {
+    // Anexos de orçamento de campo (por item): fotos, vídeos, áudios e documentos
+    match /orcamentos/{orcamentoId}/{caminho=**} {
       allow read: if request.auth != null;
       allow create, update: if request.auth != null
         && request.resource.size < 200 * 1024 * 1024;

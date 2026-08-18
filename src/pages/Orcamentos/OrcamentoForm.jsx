@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import {
@@ -22,14 +22,24 @@ const orcamentoVazio = {
   contato: '',
   telefone: '',
   localObra: '',
-  descricao: '',
-  medidas: '',
   observacoes: '',
   valorEstimado: '',
   status: 'aberto',
   lembretes: [],
-  anexos: [],
+  itens: [],
+  anexos: [], // legado: anexos gerais de orçamentos antigos
 };
+
+function novoItemOrcamento(sequencia) {
+  return {
+    id: crypto.randomUUID(),
+    sequencia,
+    nome: '',
+    descricao: '',
+    medidas: '',
+    anexos: [],
+  };
+}
 
 export default function OrcamentoForm() {
   const { id: idRota } = useParams();
@@ -46,11 +56,11 @@ export default function OrcamentoForm() {
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState('');
   const [aviso, setAviso] = useState('');
-  const [envio, setEnvio] = useState(null); // { tipo, progresso, tarefa }
+  const [envio, setEnvio] = useState(null); // { itemId, tipo, progresso, tarefa }
   const [novoLembrete, setNovoLembrete] = useState('');
-  const [anexoExcluir, setAnexoExcluir] = useState(null);
+  const [anexoExcluir, setAnexoExcluir] = useState(null); // { itemId, anexo }
+  const [itemExcluir, setItemExcluir] = useState(null);
   const [fotoAmpliada, setFotoAmpliada] = useState(null);
-  const inputsArquivo = useRef({});
 
   useEffect(() => {
     listarClientes()
@@ -79,6 +89,26 @@ export default function OrcamentoForm() {
     });
   }
 
+  // ---------- Itens do orçamento ----------
+  function adicionarItem() {
+    const sequencia = dados.itens.reduce((maior, i) => Math.max(maior, i.sequencia || 0), 0) + 1;
+    alterar('itens', [...dados.itens, novoItemOrcamento(sequencia)]);
+  }
+
+  function alterarItem(itemId, campo, valor) {
+    alterar(
+      'itens',
+      dados.itens.map((item) => (item.id === itemId ? { ...item, [campo]: valor } : item))
+    );
+  }
+
+  function confirmarExclusaoItem() {
+    const item = itemExcluir;
+    setItemExcluir(null);
+    (item.anexos || []).forEach((anexo) => anexo.caminho && excluirAnexo(anexo.caminho));
+    alterar('itens', dados.itens.filter((i) => i.id !== item.id));
+  }
+
   // ---------- Lembretes ----------
   function adicionarLembrete() {
     if (!novoLembrete.trim()) return;
@@ -100,16 +130,26 @@ export default function OrcamentoForm() {
     alterar('lembretes', dados.lembretes.filter((l) => l.id !== lembreteId));
   }
 
-  // ---------- Anexos ----------
-  async function enviarAnexo(tipo, arquivo, nome) {
+  // ---------- Anexos por item ----------
+  async function enviarAnexo(itemId, tipo, arquivo, nome) {
     setErro('');
     try {
-      const { tarefa, promessa } = await iniciarEnvioAnexo(id, tipo, arquivo, nome, (progresso) =>
-        setEnvio((atual) => ({ ...(atual || { tipo }), tipo, progresso, tarefa }))
+      const { tarefa, promessa } = await iniciarEnvioAnexo(
+        id,
+        tipo,
+        arquivo,
+        nome,
+        (progresso) => setEnvio((atual) => ({ ...(atual || {}), itemId, tipo, progresso, tarefa })),
+        itemId
       );
-      setEnvio({ tipo, progresso: 0, tarefa });
+      setEnvio({ itemId, tipo, progresso: 0, tarefa });
       const anexo = await promessa;
-      setDados((atual) => ({ ...atual, anexos: [...(atual.anexos || []), anexo] }));
+      setDados((atual) => ({
+        ...atual,
+        itens: atual.itens.map((item) =>
+          item.id === itemId ? { ...item, anexos: [...(item.anexos || []), anexo] } : item
+        ),
+      }));
       setEnvio(null);
       setAviso('Anexo enviado. Lembre de salvar o orçamento para gravá-lo.');
     } catch (excecao) {
@@ -120,17 +160,25 @@ export default function OrcamentoForm() {
     }
   }
 
-  function aoEscolherArquivo(tipo, evento) {
+  function aoEscolherArquivo(itemId, tipo, evento) {
     const arquivo = evento.target.files[0];
-    if (arquivo) enviarAnexo(tipo, arquivo, arquivo.name);
+    if (arquivo) enviarAnexo(itemId, tipo, arquivo, arquivo.name);
     evento.target.value = '';
   }
 
   function confirmarExclusaoAnexo() {
-    const anexo = anexoExcluir;
+    const { itemId, anexo } = anexoExcluir;
     setAnexoExcluir(null);
     if (anexo.caminho) excluirAnexo(anexo.caminho);
-    setDados((atual) => ({ ...atual, anexos: atual.anexos.filter((a) => a !== anexo) }));
+    setDados((atual) => ({
+      ...atual,
+      itens: atual.itens.map((item) =>
+        item.id === itemId
+          ? { ...item, anexos: item.anexos.filter((a) => a !== anexo) }
+          : item
+      ),
+      anexos: (atual.anexos || []).filter((a) => a !== anexo),
+    }));
   }
 
   // ---------- Salvar ----------
@@ -141,21 +189,30 @@ export default function OrcamentoForm() {
       setErro('Informe o cliente do orçamento.');
       return;
     }
+    const itensValidos = dados.itens.filter(
+      (i) => i.nome.trim() || i.descricao.trim() || (i.anexos || []).length > 0
+    );
+    if (itensValidos.some((i) => !i.nome.trim())) {
+      setErro('Todo item precisa de um nome.');
+      return;
+    }
     setSalvando(true);
     const corpo = {
       ...dados,
       clienteNome: dados.clienteNome.trim(),
+      itens: itensValidos,
       valorEstimado: Number(dados.valorEstimado) || 0,
     };
     delete corpo.id;
     try {
       if (ehNovo && !dados.numero) {
         const numero = await criarOrcamento(id, corpo, usuario.uid);
-        setDados((atual) => ({ ...atual, numero }));
+        setDados((atual) => ({ ...atual, numero, itens: itensValidos }));
         navegar(`/orcamentos/${id}`, { replace: true });
         setAviso(`Orçamento ${numero} criado.`);
       } else {
         await atualizarOrcamento(id, corpo, usuario.uid);
+        setDados((atual) => ({ ...atual, itens: itensValidos }));
         setAviso('Orçamento salvo.');
       }
     } catch (_) {
@@ -167,22 +224,145 @@ export default function OrcamentoForm() {
 
   if (carregando) return <div className="texto-apoio">Carregando orçamento...</div>;
 
-  const anexosPorTipo = (tipo) => (dados.anexos || []).filter((a) => a.tipo === tipo);
+  const totalAnexos =
+    dados.itens.reduce((t, i) => t + (i.anexos || []).length, 0) + (dados.anexos || []).length;
+
+  function blocoAnexos(itemId, anexos) {
+    const porTipo = (tipo) => anexos.filter((a) => a.tipo === tipo);
+    return (
+      <>
+        {podeEditar && (
+          <div className="botoes-anexo">
+            <label className="botao-secundario rotulo-foto">
+              Foto
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                style={{ display: 'none' }}
+                onChange={(e) => aoEscolherArquivo(itemId, 'foto', e)}
+              />
+            </label>
+            <GravadorAudio
+              desabilitado={Boolean(envio)}
+              onGravado={(blob, extensao) =>
+                enviarAnexo(itemId, 'audio', blob, `gravacao-${Date.now()}.${extensao}`)
+              }
+            />
+            <label className="botao-secundario rotulo-foto">
+              Áudio do aparelho
+              <input
+                type="file"
+                accept="audio/*"
+                style={{ display: 'none' }}
+                onChange={(e) => aoEscolherArquivo(itemId, 'audio', e)}
+              />
+            </label>
+            <label className="botao-secundario rotulo-foto">
+              Vídeo
+              <input
+                type="file"
+                accept="video/*"
+                capture="environment"
+                style={{ display: 'none' }}
+                onChange={(e) => aoEscolherArquivo(itemId, 'video', e)}
+              />
+            </label>
+            <label className="botao-secundario rotulo-foto">
+              Arquivo
+              <input
+                type="file"
+                style={{ display: 'none' }}
+                onChange={(e) => aoEscolherArquivo(itemId, 'arquivo', e)}
+              />
+            </label>
+          </div>
+        )}
+
+        {envio && envio.itemId === itemId && (
+          <div className="barra-progresso" style={{ marginBottom: 12 }}>
+            <div className="barra-progresso-interna" style={{ width: `${envio.progresso}%` }} />
+            <button type="button" className="acao-excluir" onClick={() => envio.tarefa.cancel()}>
+              Cancelar envio de {ROTULO_TIPO[envio.tipo].toLowerCase()} ({envio.progresso}%)
+            </button>
+          </div>
+        )}
+
+        {porTipo('foto').length > 0 && (
+          <div className="miniaturas" style={{ marginBottom: 8 }}>
+            {porTipo('foto').map((anexo) => (
+              <div key={anexo.urlStorage} className="miniatura">
+                <img
+                  src={anexo.urlStorage}
+                  alt="Foto do item"
+                  onClick={() => setFotoAmpliada(anexo.urlStorage)}
+                />
+                {podeEditar && (
+                  <button type="button" onClick={() => setAnexoExcluir({ itemId, anexo })}>
+                    Remover
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {porTipo('audio').map((anexo) => (
+          <div key={anexo.urlStorage} className="linha-anexo">
+            <audio controls src={anexo.urlStorage} preload="none" style={{ flex: 1, minWidth: 0 }} />
+            {podeEditar && (
+              <button
+                type="button"
+                className="acao-excluir"
+                onClick={() => setAnexoExcluir({ itemId, anexo })}
+              >
+                Remover
+              </button>
+            )}
+          </div>
+        ))}
+
+        {['video', 'arquivo'].map((tipo) =>
+          porTipo(tipo).map((anexo) => (
+            <div key={anexo.urlStorage} className="linha-anexo">
+              <span className="badge badge-ativo">{ROTULO_TIPO[tipo]}</span>
+              <a
+                href={anexo.urlStorage}
+                target="_blank"
+                rel="noreferrer"
+                style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+              >
+                {anexo.nome}
+              </a>
+              {podeEditar && (
+                <button
+                  type="button"
+                  className="acao-excluir"
+                  onClick={() => setAnexoExcluir({ itemId, anexo })}
+                >
+                  Remover
+                </button>
+              )}
+            </div>
+          ))
+        )}
+      </>
+    );
+  }
 
   return (
     <div className="pagina-os">
       <div className="barra-acoes">
         <h1 className="titulo-pagina">{dados.numero || 'Novo orçamento'}</h1>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <button type="button" className="botao-secundario" onClick={() => navegar('/orcamentos')}>
-            Voltar
-          </button>
-        </div>
+        <button type="button" className="botao-secundario" onClick={() => navegar('/orcamentos')}>
+          Voltar
+        </button>
       </div>
 
       {erro && <div className="mensagem-erro">{erro}</div>}
       {aviso && <div className="mensagem-sucesso">{aviso}</div>}
 
+      {/* ---------- Cabeçalho ---------- */}
       <div className="cartao" style={{ marginBottom: 16 }}>
         <fieldset disabled={!podeEditar || salvando} style={{ border: 'none' }}>
           <div className="grade-formulario">
@@ -227,25 +407,6 @@ export default function OrcamentoForm() {
               />
             </div>
             <div className="campo campo-largo">
-              <label htmlFor="descricao">Descrição do serviço orçado</label>
-              <textarea
-                id="descricao"
-                rows={2}
-                value={dados.descricao}
-                onChange={(e) => alterar('descricao', e.target.value)}
-              />
-            </div>
-            <div className="campo campo-largo">
-              <label htmlFor="medidas">Medidas e observações técnicas</label>
-              <textarea
-                id="medidas"
-                rows={3}
-                placeholder="Ex.: tanque 12 m de diâmetro × 8 m de altura, área estimada 380 m²..."
-                value={dados.medidas}
-                onChange={(e) => alterar('medidas', e.target.value)}
-              />
-            </div>
-            <div className="campo campo-largo">
               <label htmlFor="observacoes">Observações gerais</label>
               <textarea
                 id="observacoes"
@@ -285,6 +446,88 @@ export default function OrcamentoForm() {
           </div>
         </fieldset>
       </div>
+
+      {/* ---------- Itens do orçamento ---------- */}
+      <div className="barra-acoes">
+        <h2 className="subtitulo-secao" style={{ margin: 0 }}>
+          Itens do orçamento ({dados.itens.length})
+        </h2>
+        {podeEditar && (
+          <button type="button" className="botao-primario botao-acao" onClick={adicionarItem}>
+            Adicionar item
+          </button>
+        )}
+      </div>
+
+      {dados.itens.map((item) => (
+        <div key={item.id} className="cartao cartao-item-orcamento">
+          <div className="cabecalho-item-orcamento">
+            <strong>Item {item.sequencia}</strong>
+            {podeEditar && (
+              <button
+                type="button"
+                className="acao-excluir"
+                style={{ background: 'none', border: 'none', fontSize: 13 }}
+                onClick={() => setItemExcluir(item)}
+              >
+                Remover item
+              </button>
+            )}
+          </div>
+          <fieldset disabled={!podeEditar || salvando} style={{ border: 'none' }}>
+            <div className="grade-formulario">
+              <div className="campo">
+                <label>Nome do item *</label>
+                <input
+                  value={item.nome}
+                  onChange={(e) => alterarItem(item.id, 'nome', e.target.value)}
+                  placeholder="Ex.: Tanque de armazenamento"
+                />
+              </div>
+              <div className="campo">
+                <label>Medidas</label>
+                <input
+                  value={item.medidas}
+                  onChange={(e) => alterarItem(item.id, 'medidas', e.target.value)}
+                  placeholder="Ex.: 12 m diâmetro × 8 m altura ≈ 380 m²"
+                />
+              </div>
+              <div className="campo campo-largo">
+                <label>Descrição / como executar</label>
+                <textarea
+                  rows={2}
+                  value={item.descricao}
+                  onChange={(e) => alterarItem(item.id, 'descricao', e.target.value)}
+                  placeholder="Observações e ideia de execução deste item"
+                />
+              </div>
+            </div>
+          </fieldset>
+          {blocoAnexos(item.id, item.anexos || [])}
+          {(item.anexos || []).length === 0 && (!envio || envio.itemId !== item.id) && (
+            <p className="texto-apoio">Sem anexos neste item — grave um áudio ou tire fotos.</p>
+          )}
+        </div>
+      ))}
+
+      {dados.itens.length === 0 && (
+        <div className="cartao" style={{ marginBottom: 16 }}>
+          <p className="texto-apoio">
+            Nenhum item ainda. Use "Adicionar item" para lançar cada peça ou serviço do
+            orçamento, com fotos, áudios e arquivos próprios.
+          </p>
+        </div>
+      )}
+
+      {/* Anexos gerais de orçamentos antigos (antes da organização por item) */}
+      {(dados.anexos || []).length > 0 && (
+        <div className="cartao" style={{ marginBottom: 16 }}>
+          <h2 className="subtitulo-secao" style={{ marginTop: 0 }}>
+            Anexos gerais (antigos)
+          </h2>
+          {blocoAnexos(null, dados.anexos)}
+        </div>
+      )}
 
       {/* ---------- Lembretes ---------- */}
       <div className="cartao" style={{ marginBottom: 16 }}>
@@ -332,135 +575,13 @@ export default function OrcamentoForm() {
         )}
       </div>
 
-      {/* ---------- Anexos ---------- */}
-      <div className="cartao" style={{ marginBottom: 16 }}>
-        <h2 className="subtitulo-secao" style={{ marginTop: 0 }}>
-          Fotos, áudios, vídeos e arquivos
-        </h2>
-
-        {podeEditar && (
-          <div className="botoes-anexo">
-            <label className="botao-secundario rotulo-foto">
-              Foto
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                style={{ display: 'none' }}
-                onChange={(e) => aoEscolherArquivo('foto', e)}
-              />
-            </label>
-            <GravadorAudio
-              desabilitado={Boolean(envio)}
-              onGravado={(blob, extensao) =>
-                enviarAnexo('audio', blob, `gravacao-${Date.now()}.${extensao}`)
-              }
-            />
-            <label className="botao-secundario rotulo-foto">
-              Áudio do aparelho
-              <input
-                type="file"
-                accept="audio/*"
-                style={{ display: 'none' }}
-                onChange={(e) => aoEscolherArquivo('audio', e)}
-              />
-            </label>
-            <label className="botao-secundario rotulo-foto">
-              Vídeo
-              <input
-                type="file"
-                accept="video/*"
-                capture="environment"
-                style={{ display: 'none' }}
-                onChange={(e) => aoEscolherArquivo('video', e)}
-              />
-            </label>
-            <label className="botao-secundario rotulo-foto">
-              Arquivo
-              <input
-                type="file"
-                style={{ display: 'none' }}
-                onChange={(e) => aoEscolherArquivo('arquivo', e)}
-              />
-            </label>
-          </div>
-        )}
-
-        {envio && (
-          <div className="barra-progresso" style={{ marginBottom: 12 }}>
-            <div className="barra-progresso-interna" style={{ width: `${envio.progresso}%` }} />
-            <button type="button" className="acao-excluir" onClick={() => envio.tarefa.cancel()}>
-              Cancelar envio de {ROTULO_TIPO[envio.tipo].toLowerCase()} ({envio.progresso}%)
-            </button>
-          </div>
-        )}
-
-        {/* Fotos em miniatura */}
-        {anexosPorTipo('foto').length > 0 && (
-          <div className="miniaturas" style={{ marginBottom: 12 }}>
-            {anexosPorTipo('foto').map((anexo) => (
-              <div key={anexo.urlStorage} className="miniatura">
-                <img
-                  src={anexo.urlStorage}
-                  alt="Foto do orçamento"
-                  onClick={() => setFotoAmpliada(anexo.urlStorage)}
-                />
-                {podeEditar && (
-                  <button type="button" onClick={() => setAnexoExcluir(anexo)}>
-                    Remover
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Áudios com player */}
-        {anexosPorTipo('audio').map((anexo) => (
-          <div key={anexo.urlStorage} className="linha-anexo">
-            <audio controls src={anexo.urlStorage} preload="none" style={{ flex: 1, minWidth: 0 }} />
-            {podeEditar && (
-              <button type="button" className="acao-excluir" onClick={() => setAnexoExcluir(anexo)}>
-                Remover
-              </button>
-            )}
-          </div>
-        ))}
-
-        {/* Vídeos e arquivos como links */}
-        {['video', 'arquivo'].map((tipo) =>
-          anexosPorTipo(tipo).map((anexo) => (
-            <div key={anexo.urlStorage} className="linha-anexo">
-              <span className="badge badge-ativo">{ROTULO_TIPO[tipo]}</span>
-              <a
-                href={anexo.urlStorage}
-                target="_blank"
-                rel="noreferrer"
-                style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-              >
-                {anexo.nome}
-              </a>
-              {podeEditar && (
-                <button type="button" className="acao-excluir" onClick={() => setAnexoExcluir(anexo)}>
-                  Remover
-                </button>
-              )}
-            </div>
-          ))
-        )}
-
-        {(dados.anexos || []).length === 0 && !envio && (
-          <p className="texto-apoio">
-            Nenhum anexo ainda. Grave um áudio com a ideia de execução, tire fotos da obra e
-            anexe o que precisar.
-          </p>
-        )}
-      </div>
-
       <div className="rodape-totais">
         <div className="resumo-totais">
           <span>
-            Anexos: <strong>{(dados.anexos || []).length}</strong>
+            Itens: <strong>{dados.itens.length}</strong>
+          </span>
+          <span>
+            Anexos: <strong>{totalAnexos}</strong>
           </span>
           <span>
             Lembretes pendentes:{' '}
@@ -487,12 +608,23 @@ export default function OrcamentoForm() {
 
       {anexoExcluir && (
         <Confirmacao
-          mensagem={`Remover ${ROTULO_TIPO[anexoExcluir.tipo].toLowerCase()} "${
-            anexoExcluir.nome || ''
+          mensagem={`Remover ${ROTULO_TIPO[anexoExcluir.anexo.tipo].toLowerCase()} "${
+            anexoExcluir.anexo.nome || ''
           }"? O arquivo será apagado do armazenamento.`}
           rotuloConfirmar="Remover anexo"
           onConfirmar={confirmarExclusaoAnexo}
           onCancelar={() => setAnexoExcluir(null)}
+        />
+      )}
+
+      {itemExcluir && (
+        <Confirmacao
+          mensagem={`Remover o item ${itemExcluir.sequencia} — "${
+            itemExcluir.nome || 'sem nome'
+          }" e todos os seus anexos? Esta ação não pode ser desfeita.`}
+          rotuloConfirmar="Remover item"
+          onConfirmar={confirmarExclusaoItem}
+          onCancelar={() => setItemExcluir(null)}
         />
       )}
     </div>

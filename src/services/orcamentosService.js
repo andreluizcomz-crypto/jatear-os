@@ -77,14 +77,15 @@ export async function atualizarOrcamento(id, dados, uid) {
 
 // Upload de anexo (foto comprimida; vídeo, áudio e arquivo como estão).
 // Retorna a tarefa (permite cancelar) e a promessa com os dados do anexo.
-export async function iniciarEnvioAnexo(orcamentoId, tipo, arquivo, nome, aoProgredir) {
+export async function iniciarEnvioAnexo(orcamentoId, tipo, arquivo, nome, aoProgredir, subpasta) {
   let conteudo = arquivo;
   let contentType = arquivo.type || 'application/octet-stream';
   if (tipo === 'foto') {
     conteudo = await comprimirImagem(arquivo);
     contentType = 'image/jpeg';
   }
-  const caminho = `orcamentos/${orcamentoId}/${Date.now()}_${nome.replace(/[^\w.\-]+/g, '_')}`;
+  const pasta = subpasta ? `${orcamentoId}/${subpasta}` : orcamentoId;
+  const caminho = `orcamentos/${pasta}/${Date.now()}_${nome.replace(/[^\w.\-]+/g, '_')}`;
   const tarefa = uploadBytesResumable(ref(storage, caminho), conteudo, { contentType });
 
   const promessa = new Promise((resolver, rejeitar) => {

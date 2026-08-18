@@ -930,6 +930,20 @@ a {
   gap: 8px;
 }
 
+.cartao-item-orcamento {
+  margin-bottom: 16px;
+  border-left: 4px solid var(--jatear-vermelho);
+}
+
+.cabecalho-item-orcamento {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 16px;
+}
+
 .linha-anexo {
   display: flex;
   align-items: center;

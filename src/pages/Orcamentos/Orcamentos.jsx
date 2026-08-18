@@ -88,7 +88,10 @@ export default function Orcamentos() {
 
       <div className="lista-registros">
         {filtrados.map((orc) => {
-          const anexos = orc.anexos || [];
+          const anexos = [
+            ...(orc.anexos || []),
+            ...(orc.itens || []).flatMap((item) => item.anexos || []),
+          ];
           const contar = (tipo) => anexos.filter((a) => a.tipo === tipo).length;
           return (
             <button
@@ -114,6 +117,7 @@ export default function Orcamentos() {
               <div className="linha-detalhe">
                 {formatarData(orc.criadoEm)}
                 {orc.localObra && ` · ${orc.localObra}`}
+                {(orc.itens || []).length > 0 && ` · ${orc.itens.length} item(ns)`}
                 {podeVerValores &&
                   Number(orc.valorEstimado) > 0 &&
                   ` · ${formatarMoeda(orc.valorEstimado)}`}
