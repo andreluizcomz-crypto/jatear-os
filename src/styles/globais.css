@@ -1310,6 +1310,177 @@ input[type='checkbox'],
   .tela-login .barra-superior {
     display: flex;
   }
+}
+
+/* ==================== HARMONIZAÇÃO VISUAL ====================
+   Escala tipográfica e tamanhos de botão unificados em todo o app.
+   (Seção final: prevalece sobre as definições anteriores.) */
+
+body {
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+/* Tipografia */
+.titulo-pagina {
+  font-size: 20px;
+}
+
+.subtitulo-secao {
+  font-size: 15px;
+}
+
+.texto-apoio,
+.mensagem-erro,
+.mensagem-sucesso {
+  font-size: 13.5px;
+}
+
+.linha-detalhe,
+.dica-campo {
+  font-size: 12.5px;
+}
+
+.linha-principal strong {
+  font-size: 15px;
+}
+
+.campo label {
+  font-size: 13px;
+}
+
+.badge {
+  font-size: 11px;
+  padding: 3px 10px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.titulo-modal {
+  font-size: 17px;
+}
+
+.lista-menu a {
+  font-size: 14px;
+}
+
+/* Botões: mesma altura, fonte e raio em todo o sistema */
+.botao-primario,
+.botao-secundario {
+  width: auto;
+  min-height: 44px;
+  font-size: 14px;
+  font-weight: bold;
+  border-radius: 6px;
+  padding: 10px 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.cartao-login .botao-primario {
+  width: 100%;
+}
+
+/* Cabeçalhos de tela: botões compactos e uniformes, sem sobreposição */
+.barra-acoes {
+  margin-bottom: 16px;
+  row-gap: 10px;
+}
+
+.barra-acoes .botao-primario,
+.barra-acoes .botao-secundario {
+  min-height: 38px;
+  font-size: 13px;
+  padding: 7px 14px;
+}
+
+/* Filtros rápidos */
+.filtros-rapidos button {
+  min-height: 34px;
+  font-size: 12.5px;
+  padding: 5px 12px;
+}
+
+/* Cartões e listas */
+.cartao {
+  padding: 16px;
+}
+
+.linha-registro {
+  padding: 12px 14px;
+}
+
+/* Indicadores do dashboard */
+.valor-indicador {
+  font-size: 22px;
+}
+
+.titulo-indicador {
+  font-size: 13px;
+}
+
+.detalhe-indicador {
+  font-size: 12px;
+}
+
+.valor-destaque {
+  font-size: 24px;
+}
+
+.cartao-destaque {
+  padding: 16px;
+}
+
+/* Rodapé fixo: botão em linha própria no celular, sem espremer os totais */
+.rodape-totais {
+  row-gap: 8px;
+}
+
+.rodape-totais .botao-primario {
+  flex: 1 1 100%;
+}
+
+.resumo-totais,
+.totais-consulta {
+  font-size: 12.5px;
+}
+
+.pagina-os {
+  padding-bottom: 170px;
+}
+
+.acoes-modal,
+.acoes-rodape {
+  gap: 10px;
+}
+
+@media (min-width: 768px) {
+  .titulo-pagina {
+    font-size: 22px;
+  }
+
+  .cartao {
+    padding: 20px;
+  }
+
+  .cartao-destaque {
+    padding: 20px;
+  }
+
+  .valor-destaque {
+    font-size: 28px;
+  }
+
+  .rodape-totais .botao-primario {
+    flex: 0 0 auto;
+  }
+
+  .pagina-os {
+    padding-bottom: 96px;
+  }
 
   .cartao-login {
     margin-top: 96px;
