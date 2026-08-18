@@ -57,6 +57,9 @@ export default function Login() {
       </header>
 
       <form className="cartao-login" onSubmit={aoEnviar}>
+        <div style={{ textAlign: 'center', marginBottom: 20 }}>
+          <LogoJatear variante="colorida" altura={64} />
+        </div>
         <h1>Acessar o sistema</h1>
         <p className="subtitulo">Controle de Ordens de Serviço</p>
 
