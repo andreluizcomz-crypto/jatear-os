@@ -12,7 +12,10 @@ import { db } from '../firebase';
 import { registrarLog } from './logsService';
 import { recalcularOS } from './osService';
 
-// Recalcula os campos derivados de um item (pesos, áreas e valores)
+// Recalcula os campos derivados de um item (pesos, áreas e valores).
+// Os campos digitáveis são preservados como o usuário digitou (inclusive
+// vazios, para poder apagar e redigitar) — a conversão para número
+// acontece só na gravação (coergirNumericos).
 export function calcularItem(item) {
   const quantidade = Number(item.quantidade) || 0;
   const pesoUnitarioKg = Number(item.pesoUnitarioKg) || 0;
@@ -20,26 +23,34 @@ export function calcularItem(item) {
   const pesoTotalKg = Number((quantidade * pesoUnitarioKg).toFixed(2));
   const areaTotalM2 = Number((quantidade * areaUnitariaM2).toFixed(2));
 
-  const servicos = (item.servicos || []).map((servico) => {
-    const quantidadeCobrada = Number(servico.quantidadeCobrada) || 0;
-    const precoUnitario = Number(servico.precoUnitario) || 0;
-    return {
-      ...servico,
-      quantidadeCobrada,
-      precoUnitario,
-      valor: Number((quantidadeCobrada * precoUnitario).toFixed(2)),
-    };
-  });
+  const servicos = (item.servicos || []).map((servico) => ({
+    ...servico,
+    valor: Number(
+      ((Number(servico.quantidadeCobrada) || 0) * (Number(servico.precoUnitario) || 0)).toFixed(2)
+    ),
+  }));
 
   return {
     ...item,
-    quantidade,
-    pesoUnitarioKg,
-    areaUnitariaM2,
     pesoTotalKg,
     areaTotalM2,
     servicos,
     valorTotalItem: Number(servicos.reduce((total, s) => total + s.valor, 0).toFixed(2)),
+  };
+}
+
+// Converte os campos digitáveis para número antes de gravar no banco
+function coergirNumericos(item) {
+  return {
+    ...item,
+    quantidade: Number(item.quantidade) || 0,
+    pesoUnitarioKg: Number(item.pesoUnitarioKg) || 0,
+    areaUnitariaM2: Number(item.areaUnitariaM2) || 0,
+    servicos: (item.servicos || []).map((servico) => ({
+      ...servico,
+      quantidadeCobrada: Number(servico.quantidadeCobrada) || 0,
+      precoUnitario: Number(servico.precoUnitario) || 0,
+    })),
   };
 }
 
@@ -48,7 +59,7 @@ export function sugerirQuantidadeCobrada(unidade, item) {
   const calculado = calcularItem(item);
   if (unidade === 'm2') return calculado.areaTotalM2;
   if (unidade === 'kg') return calculado.pesoTotalKg;
-  if (unidade === 'peca') return calculado.quantidade;
+  if (unidade === 'peca') return Number(calculado.quantidade) || 0;
   return 0; // hora e verba: digitação manual
 }
 
@@ -67,7 +78,7 @@ export async function salvarItens(osId, cabecalho, itens, uid) {
   let alterados = 0;
 
   const itensComId = itens.map((item) => {
-    const calculado = calcularItem(item);
+    const calculado = calcularItem(coergirNumericos(item));
     const dados = {
       ...calculado,
       osId,
