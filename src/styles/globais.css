@@ -811,32 +811,26 @@ a {
 
 /* ---------- Conexão e fotos ---------- */
 
-.banner-sincronizacao {
-  position: fixed;
+/* Faixas de aviso: entram no fluxo da página (empurram o conteúdo,
+   não cobrem botões) e ficam grudadas no topo durante a rolagem */
+.banner-sincronizacao,
+.banner-offline {
+  position: sticky;
   top: var(--altura-barra-superior);
-  left: 0;
-  right: 0;
-  background: var(--cor-sucesso);
   color: var(--branco);
   text-align: center;
   font-size: 13px;
   font-weight: bold;
-  padding: 6px 12px;
+  padding: 8px 12px;
   z-index: 99;
 }
 
+.banner-sincronizacao {
+  background: var(--cor-sucesso);
+}
+
 .banner-offline {
-  position: fixed;
-  top: var(--altura-barra-superior);
-  left: 0;
-  right: 0;
   background: var(--cor-atencao);
-  color: var(--branco);
-  text-align: center;
-  font-size: 13px;
-  font-weight: bold;
-  padding: 6px 12px;
-  z-index: 99;
 }
 
 .secao-fotos {
@@ -1307,7 +1301,6 @@ input[type='checkbox'],
   .banner-offline,
   .banner-sincronizacao {
     top: 0;
-    left: 224px;
   }
 
   .rodape-totais {
