@@ -951,6 +951,11 @@ a {
   font-weight: bold;
 }
 
+.filtros-rapidos button.ativo {
+  background: var(--jatear-vermelho);
+  color: var(--branco);
+}
+
 .so-celular-inline {
   display: inline-flex;
 }

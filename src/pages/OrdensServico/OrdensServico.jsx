@@ -5,12 +5,22 @@ import { listarOS } from '../../services/osService';
 import { formatarData, formatarMoeda } from '../../utils/formatadores';
 import { STATUS_OS, rotuloStatusOS } from '../../utils/constantes';
 
+// Filtros rápidos da lista de OS
+const FILTROS_OS = [
+  { chave: 'todas', rotulo: 'Todas', status: null },
+  { chave: 'abertas', rotulo: 'Abertas', status: ['aberta', 'em_execucao'] },
+  { chave: 'concluidas', rotulo: 'Concluídas', status: ['concluida'] },
+  { chave: 'faturadas', rotulo: 'Faturadas', status: ['parcialmente_faturada', 'faturada'] },
+  { chave: 'canceladas', rotulo: 'Canceladas', status: ['cancelada'] },
+];
+
 export default function OrdensServico() {
   const navegar = useNavigate();
   const { ehAdministrador, podeVerValores, perfilUsuario } = useAuth();
   const podeEditar = ehAdministrador || perfilUsuario?.perfil === 'producao';
   const [ordens, setOrdens] = useState([]);
   const [busca, setBusca] = useState('');
+  const [filtro, setFiltro] = useState('todas');
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState('');
 
@@ -21,8 +31,16 @@ export default function OrdensServico() {
       .finally(() => setCarregando(false));
   }, []);
 
+  const contagem = (chave) => {
+    const definicao = FILTROS_OS.find((f) => f.chave === chave);
+    if (!definicao.status) return ordens.length;
+    return ordens.filter((os) => definicao.status.includes(os.status)).length;
+  };
+
   const termo = busca.trim().toLowerCase();
+  const statusFiltro = FILTROS_OS.find((f) => f.chave === filtro)?.status;
   const filtradas = ordens.filter((os) => {
+    if (statusFiltro && !statusFiltro.includes(os.status)) return false;
     if (!termo) return true;
     return (
       (os.numero || '').toLowerCase().includes(termo) ||
@@ -49,6 +67,19 @@ export default function OrdensServico() {
       </div>
 
       {erro && <div className="mensagem-erro">{erro}</div>}
+
+      <div className="filtros-rapidos">
+        {FILTROS_OS.map(({ chave, rotulo }) => (
+          <button
+            type="button"
+            key={chave}
+            className={filtro === chave ? 'ativo' : ''}
+            onClick={() => setFiltro(chave)}
+          >
+            {rotulo} ({contagem(chave)})
+          </button>
+        ))}
+      </div>
 
       <div className="campo" style={{ maxWidth: 420 }}>
         <input
@@ -94,7 +125,7 @@ export default function OrdensServico() {
           <p className="texto-apoio">
             {ordens.length === 0
               ? 'Nenhuma OS aberta ainda.'
-              : 'Nenhuma OS encontrada para esta busca.'}
+              : 'Nenhuma OS encontrada para este filtro.'}
           </p>
         )}
       </div>
