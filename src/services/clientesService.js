@@ -13,10 +13,56 @@ import {
 import { db } from '../firebase';
 import { somenteDigitos } from '../utils/validadores';
 
+// Cópia local do cadastro (localStorage) para funcionar sem internet
+const CHAVE_CACHE_CLIENTES = 'jatearos_clientes_cache';
+
+function lerCacheClientes() {
+  try {
+    return JSON.parse(localStorage.getItem(CHAVE_CACHE_CLIENTES) || '[]');
+  } catch (_) {
+    return [];
+  }
+}
+
+function gravarCacheClientes(lista) {
+  try {
+    localStorage.setItem(
+      CHAVE_CACHE_CLIENTES,
+      JSON.stringify(
+        lista.map((c) => ({
+          id: c.id,
+          razaoSocial: c.razaoSocial,
+          nomeFantasia: c.nomeFantasia || '',
+          cnpj: c.cnpj || '',
+          ativo: c.ativo !== false,
+          subclientes: c.subclientes || [],
+          tabelaPrecos: c.tabelaPrecos || [],
+          prazoPadraoDias: c.prazoPadraoDias || 0,
+          endereco: c.endereco || {},
+        }))
+      )
+    );
+  } catch (_) {
+    // sem espaço no aparelho: segue sem cópia local
+  }
+}
+
 export async function listarClientes() {
-  const consulta = query(collection(db, 'clientes'), orderBy('razaoSocial'));
-  const resultado = await getDocs(consulta);
-  return resultado.docs.map((d) => ({ id: d.id, ...d.data() }));
+  try {
+    const consulta = query(collection(db, 'clientes'), orderBy('razaoSocial'));
+    const resultado = await getDocs(consulta);
+    const lista = resultado.docs.map((d) => ({ id: d.id, ...d.data() }));
+    if (lista.length > 0) {
+      gravarCacheClientes(lista);
+      return lista;
+    }
+    // Cache do Firestore vazio (ex.: primeira abertura offline): usa a cópia local
+    return lista.length === 0 && !navigator.onLine ? lerCacheClientes() : lista;
+  } catch (excecao) {
+    const copiaLocal = lerCacheClientes();
+    if (copiaLocal.length > 0) return copiaLocal;
+    throw excecao;
+  }
 }
 
 export async function buscarCliente(id) {
